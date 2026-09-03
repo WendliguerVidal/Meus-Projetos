@@ -1,0 +1,138 @@
+// CRM de Licitações e Gestão Comercial — Prisma Schema
+// Dev: SQLite (via DATABASE_URL env). Prod: aponte DATABASE_URL para PostgreSQL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Observação: SQLite (usado em desenvolvimento) não suporta o tipo `enum` nativo do
+// Prisma — por isso os campos abaixo marcados com "String —" usam String simples,
+// com os valores permitidos validados na camada de aplicação (ver src/types/deal.ts).
+// Em produção (PostgreSQL) o mesmo schema funciona normalmente com String.
+
+// Role:           "ADMIN" | "USER"
+// DealCategory:   "ANDAMENTO" | "PARALISADA" | "GANHO" | "PERDIDO" | "GARANTIA" | "CONCLUIDO" | "ARQUIVADO"
+// LossReason:     "PRECO" | "ESPECIFICACAO_INADEQUADA" | "FALTA_DOCUMENTACAO" | "DISTANCIA" | "OUTROS"
+// ReminderStatus: "PENDING" | "DONE"
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("USER") // String — Role
+  allowedStates String  @default("[]") // JSON string array de siglas, ex: ["MG","SP"]
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  dealsCreated  Deal[]     @relation("DealCreatedBy")
+  dealsAssigned Deal[]     @relation("DealAssignedTo")
+  notes         Note[]
+  reminders     Reminder[] @relation("ReminderAssignedTo")
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model Deal {
+  id           String   @id @default(cuid())
+  title        String
+  client       String
+  city         String
+  state        String // sigla UF, ex: "MG"
+  equipment    String?
+  model        String?
+  serialNumber String?
+
+  category String @default("ANDAMENTO") // String — DealCategory
+  status   String // status dinâmico conforme a categoria (ver src/types)
+
+  lossReason String? // String — LossReason
+  lossDetail String?
+
+  deadline DateTime?
+
+  archivedYear  Int?
+  archivedMonth Int?
+
+  createdById  String
+  createdBy    User    @relation("DealCreatedBy", fields: [createdById], references: [id])
+  assignedToId String?
+  assignedTo   User?   @relation("DealAssignedTo", fields: [assignedToId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notes       Note[]
+  reminders   Reminder[]
+  attachments Attachment[]
+  auditLogs   AuditLog[]
+
+  @@index([category])
+  @@index([state])
+  @@index([city])
+  @@index([assignedToId])
+  @@map("deals")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  dealId    String
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([dealId])
+  @@map("notes")
+}
+
+model Reminder {
+  id           String         @id @default(cuid())
+  dealId       String
+  deal         Deal           @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  assignedToId String
+  assignedTo   User           @relation("ReminderAssignedTo", fields: [assignedToId], references: [id])
+  dueDate      DateTime
+  description  String
+  status       String   @default("PENDING") // String — ReminderStatus
+  createdAt    DateTime @default(now())
+
+  @@index([dealId])
+  @@index([assignedToId])
+  @@map("reminders")
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  dealId     String
+  deal       Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  fileName   String
+  fileUrl    String
+  fileType   String
+  uploadedAt DateTime @default(now())
+
+  @@index([dealId])
+  @@map("attachments")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  dealId    String
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([dealId])
+  @@map("audit_logs")
+}
