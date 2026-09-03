@@ -1,19 +1,20 @@
 // CRM de Licitações e Gestão Comercial — Prisma Schema
-// Dev: SQLite (via DATABASE_URL env). Prod: aponte DATABASE_URL para PostgreSQL.
+// PostgreSQL (via DATABASE_URL env) — mesmo schema para desenvolvimento e produção
+// (ex: Vercel Postgres/Neon). Ver README para como apontar para um banco local.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Observação: SQLite (usado em desenvolvimento) não suporta o tipo `enum` nativo do
-// Prisma — por isso os campos abaixo marcados com "String —" usam String simples,
-// com os valores permitidos validados na camada de aplicação (ver src/types/deal.ts).
-// Em produção (PostgreSQL) o mesmo schema funciona normalmente com String.
+// Observação: os campos abaixo marcados com "String —" usam String simples em vez de
+// `enum` nativo do Prisma (os valores permitidos são validados na camada de aplicação,
+// ver src/types/deal.ts). Isso mantém o schema portável — funciona sem alterações caso
+// DATABASE_URL aponte para SQLite em algum ambiente local, além de Postgres.
 
 // Role:           "ADMIN" | "USER"
 // DealCategory:   "ANDAMENTO" | "PARALISADA" | "GANHO" | "PERDIDO" | "GARANTIA" | "CONCLUIDO" | "ARQUIVADO"

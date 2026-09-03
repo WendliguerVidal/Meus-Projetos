@@ -3,6 +3,9 @@ import type { NextAuthConfig } from "next-auth";
 // Configuração "edge-safe" usada pelo middleware (sem acesso ao Prisma/bcrypt).
 // Os providers reais (Credentials) são adicionados em src/lib/auth.ts.
 export const authConfig = {
+  // Confia no header `host` do request para montar callback URLs — necessário em
+  // plataformas serverless (Vercel) onde a URL pública não é conhecida em build-time.
+  trustHost: true,
   pages: {
     signIn: "/login",
   },

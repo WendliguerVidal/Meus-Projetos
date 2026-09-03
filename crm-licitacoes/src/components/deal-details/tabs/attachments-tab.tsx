@@ -43,7 +43,7 @@ export function AttachmentsTab({ dealId }: { dealId: string }) {
           className="hidden"
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
-        <p className="text-xs text-muted-foreground">Tamanho máximo: 5MB</p>
+        <p className="text-xs text-muted-foreground">Tamanho máximo: 3MB</p>
       </div>
 
       {isLoading && <Skeleton className="h-12 w-full" />}

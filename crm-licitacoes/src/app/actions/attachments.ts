@@ -5,7 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, assertCanAccessState } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB — armazenamento local via data URL
+// 3MB — armazenamento como data URL (base64 infla ~33% o payload; plataformas serverless
+// como a Vercel (plano Hobby) limitam o corpo da requisição a ~4.5MB, então mantemos
+// margem de segurança abaixo desse teto).
+const MAX_FILE_SIZE = 3 * 1024 * 1024;
 
 export async function listAttachments(dealId: string) {
   const user = await requireUser();
@@ -23,7 +26,7 @@ export async function uploadAttachment(formData: FormData) {
 
   if (!dealId) throw new Error("Processo inválido.");
   if (!(file instanceof File)) throw new Error("Nenhum arquivo enviado.");
-  if (file.size > MAX_FILE_SIZE) throw new Error("Arquivo excede o limite de 5MB.");
+  if (file.size > MAX_FILE_SIZE) throw new Error("Arquivo excede o limite de 3MB.");
 
   const deal = await prisma.deal.findUniqueOrThrow({ where: { id: dealId } });
   assertCanAccessState(user, deal.state);
