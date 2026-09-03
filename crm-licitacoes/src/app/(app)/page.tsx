@@ -31,11 +31,18 @@ export default function HomePage() {
   const [kanbanCategory, setKanbanCategory] = React.useState<DealCategory>(
     urlCategory && KANBAN_CATEGORIES.includes(urlCategory) ? urlCategory : "ANDAMENTO"
   );
+  const [activeTab, setActiveTab] = React.useState("tabela");
 
   React.useEffect(() => {
     if (urlCategory && KANBAN_CATEGORIES.includes(urlCategory)) {
       setKanbanCategory(urlCategory);
     }
+  }, [urlCategory]);
+
+  // Selecionar uma categoria na Sidebar sempre traz a Tabela para frente, já expandida
+  // na categoria escolhida (é onde os detalhes/processos vinculados são exibidos).
+  React.useEffect(() => {
+    if (urlCategory) setActiveTab("tabela");
   }, [urlCategory]);
 
   const { data: deals, isLoading } = useDeals();
@@ -75,7 +82,7 @@ export default function HomePage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="tabela">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="tabela" className="gap-1.5">
             <Table2 className="h-4 w-4" />
@@ -92,7 +99,11 @@ export default function HomePage() {
         </TabsList>
 
         <TabsContent value="tabela">
-          {isLoading ? <Skeleton className="h-64 w-full" /> : <DealTable deals={visibleDeals} />}
+          {isLoading ? (
+            <Skeleton className="h-64 w-full" />
+          ) : (
+            <DealTable deals={visibleDeals} selectedCategory={urlCategory} />
+          )}
         </TabsContent>
 
         <TabsContent value="kanban" className="space-y-3">

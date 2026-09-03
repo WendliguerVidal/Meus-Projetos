@@ -14,9 +14,26 @@ import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 
 const VISIBLE_CATEGORIES: DealCategory[] = DEAL_CATEGORIES.filter((c) => c !== "ARQUIVADO");
 
-export function DealTable({ deals }: { deals: DealWithRelations[] }) {
+export function DealTable({
+  deals,
+  selectedCategory,
+}: {
+  deals: DealWithRelations[];
+  /** Categoria escolhida na Sidebar — é aberta automaticamente e recebe destaque visual. */
+  selectedCategory?: DealCategory | null;
+}) {
   const { openDeal } = useDealUI();
   const [openItems, setOpenItems] = React.useState<string[]>(["ANDAMENTO"]);
+
+  // Ao selecionar uma categoria na Sidebar: garante que a seção correspondente esteja
+  // expandida (sem recolher as demais) e rola a tela até ela.
+  React.useEffect(() => {
+    if (!selectedCategory || !VISIBLE_CATEGORIES.includes(selectedCategory)) return;
+    setOpenItems((prev) => (prev.includes(selectedCategory) ? prev : [...prev, selectedCategory]));
+    document
+      .getElementById(`categoria-${selectedCategory}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [selectedCategory]);
 
   const grouped = React.useMemo(() => {
     const map = new Map<string, DealWithRelations[]>();
@@ -47,13 +64,23 @@ export function DealTable({ deals }: { deals: DealWithRelations[] }) {
       <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="rounded-lg border">
         {VISIBLE_CATEGORIES.map((category) => {
           const items = grouped.get(category) ?? [];
+          const isSelected = category === selectedCategory;
           return (
-            <AccordionItem key={category} value={category} className="border-b px-3 last:border-b-0">
+            <AccordionItem
+              key={category}
+              id={`categoria-${category}`}
+              value={category}
+              className={cn(
+                "border-b px-3 last:border-b-0 transition-colors",
+                isSelected && "bg-primary/5 ring-1 ring-inset ring-primary/30 rounded-md"
+              )}
+            >
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[category] }} />
                   <span className="font-semibold">{CATEGORY_LABELS[category]}</span>
                   <Badge variant="secondary">{items.length}</Badge>
+                  {isSelected && <Badge className="bg-primary/15 text-primary hover:bg-primary/15">Selecionada</Badge>}
                 </div>
               </AccordionTrigger>
               <AccordionContent>

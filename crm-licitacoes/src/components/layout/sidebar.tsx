@@ -164,7 +164,7 @@ function NavItem({
       {dotColor && !collapsed && (
         <span className="ml-auto h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: dotColor }} />
       )}
-      {active && <span className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-primary" />}
+      {active && <span className="absolute inset-y-1 left-0 w-1 rounded-full bg-primary" />}
     </Link>
   );
 }
