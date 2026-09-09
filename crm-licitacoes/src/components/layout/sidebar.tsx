@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
+  CalendarDays,
   Clock,
   PauseCircle,
   Trophy,
@@ -77,6 +78,13 @@ export function Sidebar({
             icon={LayoutDashboard}
             label="Dashboard"
             active={pathname === "/dashboard"}
+            collapsed={collapsed}
+          />
+          <NavItem
+            href="/calendario"
+            icon={CalendarDays}
+            label="Calendário"
+            active={pathname === "/calendario"}
             collapsed={collapsed}
           />
         </div>

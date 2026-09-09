@@ -1,5 +1,6 @@
-import type { Attachment, AuditLog, Deal, Note, Reminder } from "@prisma/client";
+import type { Attachment, AuditLog, Deal, Event, Note, Reminder } from "@prisma/client";
 import type { DealCategory, LossReason, ReminderStatus } from "./deal";
+import type { EventStatus } from "./event";
 
 export type Role = "ADMIN" | "USER";
 
@@ -27,4 +28,11 @@ export type ReminderWithUser = Omit<Reminder, "status"> & { status: ReminderStat
 export type AuditLogWithUser = AuditLog & { user: UserDTO };
 export type AttachmentDTO = Attachment;
 
+export type EventWithRelations = Omit<Event, "status"> & {
+  status: EventStatus;
+  deal: Pick<Deal, "id" | "title" | "client" | "state"> | null;
+  createdBy: UserDTO;
+};
+
 export * from "./deal";
+export * from "./event";

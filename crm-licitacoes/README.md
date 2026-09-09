@@ -104,22 +104,24 @@ src/
 │   ├── (app)/          # Rotas autenticadas (layout com Sidebar + Header)
 │   │   ├── page.tsx           # Tabela / Kanban / Mapa
 │   │   ├── dashboard/         # Painel de indicadores
+│   │   ├── calendario/        # Calendário Interativo (estilo Google Agenda)
 │   │   ├── arquivo/           # Processos arquivados por ano/mês
 │   │   ├── mapa/               # Mapa em tela cheia
 │   │   └── admin/usuarios/    # Gestão de usuários (ADMIN)
-│   ├── actions/         # Server Actions (deals, notes, reminders, attachments, audit, users)
+│   ├── actions/         # Server Actions (deals, notes, reminders, attachments, audit, users, events)
 │   ├── login/            # Página de login
 │   └── api/auth/          # Route handler do NextAuth
 ├── components/
 │   ├── ui/                # Primitivos (Button, Dialog, Sheet, Table, Accordion, ...)
 │   ├── kanban/             # Board com @dnd-kit
 │   ├── map/                # Mapa com react-leaflet
+│   ├── calendar/           # Visões Dia/Semana/Mês/Ano, mini-calendário, popover de evento
 │   ├── deal-details/       # Formulário, Drawer com abas, contexto de UI global
 │   ├── dashboard/ e admin/
 │   └── layout/             # Sidebar, Header, AppShell
-├── hooks/                # useDeals, useReminders, useDealDetails, useUsers (React Query)
-├── lib/                  # prisma client, auth (NextAuth v5), rbac, utils, export-excel, geocode
-└── types/                # Zod schemas + TS types (Deal, User, categorias/status)
+├── hooks/                # useDeals, useReminders, useDealDetails, useEvents, useUsers (React Query)
+├── lib/                  # prisma client, auth (NextAuth v5), rbac, utils, export-excel, geocode, calendar-utils
+└── types/                # Zod schemas + TS types (Deal, Event, User, categorias/status)
 prisma/
 ├── schema.prisma
 └── seed.ts
@@ -137,6 +139,12 @@ prisma/
 - **Arquivado** agrupa por `archivedYear`/`archivedMonth`, sem apagar o histórico.
 - **Auditoria automática**: toda mudança de categoria/status/responsável (ou criação/edição/
   exclusão) grava um `AuditLog` imutável, exibido na aba "Auditoria" do processo.
+- **Calendário** (`/calendario`, modelo `Event`): combina dois tipos de marcador no mesmo
+  calendário — os prazos de processos em Andamento/Paralisada (`Deal.deadline`, somente-leitura,
+  clicar abre o drawer do processo) e eventos criados manualmente (reunião, entrega, etc.),
+  opcionalmente vinculados a um processo. RBAC por estado é aplicado da mesma forma: um evento
+  vinculado a um processo só aparece para quem tem acesso ao estado (UF) daquele processo;
+  eventos avulsos (sem processo vinculado) são visíveis a todos os usuários autenticados.
 
 ## Observações técnicas
 

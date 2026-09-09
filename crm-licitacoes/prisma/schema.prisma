@@ -20,6 +20,7 @@ datasource db {
 // DealCategory:   "ANDAMENTO" | "PARALISADA" | "GANHO" | "PERDIDO" | "GARANTIA" | "CONCLUIDO" | "ARQUIVADO"
 // LossReason:     "PRECO" | "ESPECIFICACAO_INADEQUADA" | "FALTA_DOCUMENTACAO" | "DISTANCIA" | "OUTROS"
 // ReminderStatus: "PENDING" | "DONE"
+// EventStatus:    "ABERTO" | "EM_ANALISE" | "GANHO" | "PERDIDO"
 
 model User {
   id           String   @id @default(cuid())
@@ -37,6 +38,7 @@ model User {
   notes         Note[]
   reminders     Reminder[] @relation("ReminderAssignedTo")
   auditLogs     AuditLog[]
+  eventsCreated Event[]    @relation("EventCreatedBy")
 
   @@map("users")
 }
@@ -74,6 +76,7 @@ model Deal {
   reminders   Reminder[]
   attachments Attachment[]
   auditLogs   AuditLog[]
+  events      Event[]
 
   @@index([category])
   @@index([state])
@@ -136,4 +139,32 @@ model AuditLog {
 
   @@index([dealId])
   @@map("audit_logs")
+}
+
+/// Evento do módulo de Calendário. Pode ser um compromisso avulso (dealId nulo) ou estar
+/// vinculado a um processo/licitação (dealId preenchido) — nesse caso o card de detalhes no
+/// calendário exibe também o cliente/órgão do processo. As datas de prazo (`Deal.deadline`)
+/// já aparecem automaticamente no calendário sem precisar de um Event — este model cobre os
+/// compromissos criados manualmente pelo usuário (reuniões, aberturas, entregas, etc.).
+model Event {
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime?
+  status         String    @default("ABERTO") // String — EventStatus
+  estimatedValue Float?
+
+  dealId String?
+  deal   Deal?   @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User   @relation("EventCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startDate])
+  @@index([dealId])
+  @@map("events")
 }
