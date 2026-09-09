@@ -23,10 +23,19 @@ export function useCalendarItems(filters: CalendarFilters) {
   });
 }
 
+// As Server Actions de mutação nunca lançam — retornam { success, ... }. Os wrappers
+// abaixo convertem uma resposta { success: false, error } de volta numa Promise
+// rejeitada, para que o fluxo onSuccess/onError do React Query continue funcionando
+// sem precisar mudar cada tela que já consome esses hooks.
+
 export function useCreateEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: EventFormValues) => createEvent(input),
+    mutationFn: async (input: EventFormValues) => {
+      const result = await createEvent(input);
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["calendar-items"] });
       toast.success("Evento criado.");
@@ -38,7 +47,11 @@ export function useCreateEvent() {
 export function useUpdateEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: EventFormValues }) => updateEvent(id, input),
+    mutationFn: async ({ id, input }: { id: string; input: EventFormValues }) => {
+      const result = await updateEvent(id, input);
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["calendar-items"] });
       toast.success("Evento atualizado.");
@@ -50,7 +63,10 @@ export function useUpdateEvent() {
 export function useDeleteEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => deleteEvent(id),
+    mutationFn: async (id: string) => {
+      const result = await deleteEvent(id);
+      if (!result.success) throw new Error(result.error);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["calendar-items"] });
       toast.success("Evento excluído.");
