@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, assertCanAccessState } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
 import { eventSchema, type EventFormValues, EVENT_STATUS_LABELS, EVENT_STATUS_COLORS } from "@/types/event";
-import { CATEGORY_COLORS, CATEGORY_LABELS, type DealCategory } from "@/types/deal";
+import { CATEGORY_COLORS, CATEGORY_LABELS, NON_ARCHIVED_CATEGORIES, type DealCategory } from "@/types/deal";
 import type { CalendarItem, EventStatus } from "@/types/event";
 import type { Prisma } from "@prisma/client";
 
@@ -14,38 +14,23 @@ export type CalendarFilters = {
   end: Date;
   /** Quando informado, restringe os Events (não os prazos de Deal) a esses status. */
   statuses?: EventStatus[];
-  /** Mostrar processos (licitações) ativos como marcadores automáticos. */
-  includeDealDeadlines?: boolean;
+  /** Categorias de processo (Deal) a exibir — vazio explícito ([]) esconde todos os
+   * processos; `undefined` usa o padrão (todas exceto Arquivado). */
+  dealCategories?: DealCategory[];
 };
 
-/** "Ativa" = qualquer processo que não esteja arquivado — cobre todo o pipeline
- * (Andamento, Paralisada, Ganho, Perdido, Garantia, Concluído), não só os em aberto. */
-const ACTIVE_DEAL_CATEGORIES: DealCategory[] = [
-  "ANDAMENTO",
-  "PARALISADA",
-  "GANHO",
-  "PERDIDO",
-  "GARANTIA",
-  "CONCLUIDO",
-];
-
-/** Lista os itens do calendário no intervalo informado: processos ativos (posicionados pelo
- * prazo, ou pela data de criação quando não há prazo) + Events criados manualmente, já
- * filtrados pelo RBAC por estado do usuário. */
+/** Lista os itens do calendário: TODOS os processos que casarem com `dealCategories`
+ * (sem nenhum filtro de data — um processo nunca é descartado por ter prazo passado,
+ * futuro ou ausente) + Events criados manualmente no intervalo informado, já filtrados
+ * pelo RBAC por estado do usuário. Cada processo é posicionado pela sua "data principal":
+ * `deadline`, e quando ausente, `createdAt` (sempre presente) como fallback. */
 export async function listCalendarItems(filters: CalendarFilters): Promise<CalendarItem[]> {
   const user = await requireUser();
   const scoped = user.role === "ADMIN" ? "all" : user.allowedStates;
-  const { start, end, statuses, includeDealDeadlines = true } = filters;
+  const { start, end, statuses, dealCategories } = filters;
 
   const dealWhere: Prisma.DealWhereInput = {
-    category: { in: ACTIVE_DEAL_CATEGORIES },
-    // A maioria dos processos reais não tem `deadline` preenchido — em vez de ficarem
-    // invisíveis no calendário, eles caem no dia em que o processo foi criado
-    // (`createdAt`), que é sempre exibida como a "data principal" pelo mapeamento abaixo.
-    OR: [
-      { deadline: { gte: start, lte: end } },
-      { deadline: null, createdAt: { gte: start, lte: end } },
-    ],
+    category: { in: dealCategories ?? NON_ARCHIVED_CATEGORIES },
     ...(scoped !== "all" ? { state: { in: scoped } } : {}),
   };
 
@@ -61,12 +46,14 @@ export async function listCalendarItems(filters: CalendarFilters): Promise<Calen
   };
 
   const [deals, events] = await Promise.all([
-    includeDealDeadlines
-      ? prisma.deal.findMany({
-          where: dealWhere,
-          select: { id: true, title: true, client: true, category: true, deadline: true, createdAt: true },
-        })
-      : Promise.resolve([]),
+    // Sem filtro de data proposital: um processo precisa aparecer no calendário
+    // independentemente de quando seu prazo cai (passado, futuro, ou nem preenchido) —
+    // é o cliente (agrupado por dia) que decide o que renderizar na visão atual.
+    // `dealCategories` explicitamente vazio ({in: []}) já resulta em zero processos.
+    prisma.deal.findMany({
+      where: dealWhere,
+      select: { id: true, title: true, client: true, category: true, deadline: true, createdAt: true, updatedAt: true },
+    }),
     prisma.event.findMany({
       where: eventWhere,
       include: { deal: { select: { id: true, title: true, client: true, state: true } } },
@@ -79,7 +66,7 @@ export async function listCalendarItems(filters: CalendarFilters): Promise<Calen
     kind: "deal-deadline",
     title: d.title,
     description: null,
-    startDate: d.deadline ?? d.createdAt,
+    startDate: d.deadline ?? d.createdAt ?? d.updatedAt,
     endDate: null,
     status: "ABERTO",
     statusLabel: CATEGORY_LABELS[d.category as DealCategory] ?? d.category,

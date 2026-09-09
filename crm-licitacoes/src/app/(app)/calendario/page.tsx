@@ -12,27 +12,36 @@ import { EventFormDialog } from "@/components/calendar/event-form-dialog";
 import { useCalendarItems } from "@/hooks/use-events";
 import { rangeForView, type CalendarView } from "@/lib/calendar-utils";
 import { EVENT_STATUSES, type CalendarItem, type EventStatus } from "@/types/event";
+import { NON_ARCHIVED_CATEGORIES, type DealCategory } from "@/types/deal";
 
 export default function CalendarioPage() {
   const [view, setView] = React.useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = React.useState(() => new Date());
   const [visibleStatuses, setVisibleStatuses] = React.useState<EventStatus[]>([...EVENT_STATUSES]);
-  const [showDealDeadlines, setShowDealDeadlines] = React.useState(true);
+  const [visibleDealCategories, setVisibleDealCategories] = React.useState<DealCategory[]>([
+    ...NON_ARCHIVED_CATEGORIES,
+  ]);
 
   const [formOpen, setFormOpen] = React.useState(false);
   const [formEditing, setFormEditing] = React.useState<CalendarItem | null>(null);
   const [formDefaultDate, setFormDefaultDate] = React.useState<Date | null>(null);
 
   const range = React.useMemo(() => rangeForView(view, currentDate), [view, currentDate]);
-  const { data: items, isLoading } = useCalendarItems({
+  const { data: items, isLoading, error } = useCalendarItems({
     start: range.start,
     end: range.end,
     statuses: visibleStatuses,
-    includeDealDeadlines: showDealDeadlines,
+    dealCategories: visibleDealCategories,
   });
 
   const toggleStatus = (status: EventStatus) => {
     setVisibleStatuses((prev) => (prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]));
+  };
+
+  const toggleDealCategory = (category: DealCategory) => {
+    setVisibleDealCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+    );
   };
 
   const openCreateDialog = (date?: Date) => {
@@ -69,8 +78,8 @@ export default function CalendarioPage() {
         onSelectDay={goToDay}
         visibleStatuses={visibleStatuses}
         onToggleStatus={toggleStatus}
-        showDealDeadlines={showDealDeadlines}
-        onToggleDealDeadlines={setShowDealDeadlines}
+        visibleDealCategories={visibleDealCategories}
+        onToggleDealCategory={toggleDealCategory}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -83,7 +92,11 @@ export default function CalendarioPage() {
         />
 
         <div className="min-h-0 flex-1 overflow-auto">
-          {isLoading ? (
+          {error ? (
+            <div className="m-4 rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+              Não foi possível carregar o calendário: {(error as Error).message || "erro desconhecido"}.
+            </div>
+          ) : isLoading ? (
             <div className="p-4">
               <Skeleton className="h-full min-h-[60vh] w-full" />
             </div>

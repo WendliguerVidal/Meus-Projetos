@@ -16,6 +16,10 @@ export const DEAL_CATEGORIES = [
 
 export type DealCategory = (typeof DEAL_CATEGORIES)[number];
 
+/** Todas as categorias exceto Arquivado — usado como padrão em filtros (ex: Calendário)
+ * que devem cobrir todo o pipeline ativo/concluído sem incluir o histórico arquivado. */
+export const NON_ARCHIVED_CATEGORIES: DealCategory[] = DEAL_CATEGORIES.filter((c) => c !== "ARQUIVADO");
+
 export const CATEGORY_LABELS: Record<DealCategory, string> = {
   ANDAMENTO: "Andamento",
   PARALISADA: "Paralisada",

@@ -12,7 +12,7 @@ function calendarQueryKey(filters: CalendarFilters) {
     dateKey(filters.start),
     dateKey(filters.end),
     filters.statuses?.slice().sort().join(",") ?? "",
-    filters.includeDealDeadlines ?? true,
+    filters.dealCategories?.slice().sort().join(",") ?? "",
   ] as const;
 }
 
