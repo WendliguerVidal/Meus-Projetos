@@ -54,11 +54,20 @@ export async function listCalendarItems(filters: CalendarFilters): Promise<Calen
       where: dealWhere,
       select: { id: true, title: true, client: true, category: true, deadline: true, createdAt: true, updatedAt: true },
     }),
-    prisma.event.findMany({
-      where: eventWhere,
-      include: { deal: { select: { id: true, title: true, client: true, state: true } } },
-      orderBy: { startDate: "asc" },
-    }),
+    // Isolado num catch próprio: se a tabela `events` ainda não existir no banco (schema
+    // pendente de `prisma db push`) ou qualquer outro erro específico de Event ocorrer,
+    // isso não pode derrubar a listagem de processos — o calendário deve continuar
+    // funcional mesmo com o recurso de Eventos manuais temporariamente indisponível.
+    prisma.event
+      .findMany({
+        where: eventWhere,
+        include: { deal: { select: { id: true, title: true, client: true, state: true } } },
+        orderBy: { startDate: "asc" },
+      })
+      .catch((err) => {
+        console.error("[calendario] Falha ao buscar Events (rode `npx prisma db push` se a tabela `events` não existir ainda):", err);
+        return [];
+      }),
   ]);
 
   const deadlineItems: CalendarItem[] = deals.map((d) => ({
