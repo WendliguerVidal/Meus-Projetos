@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useDealUI } from "@/components/deal-details/deal-ui-context";
 import { useDeleteEvent } from "@/hooks/use-events";
+import { useDeleteDeal } from "@/hooks/use-deals";
 import type { CalendarItem } from "@/types/event";
 import { Building2, Clock, ExternalLink, Loader2, Pencil, Trash2 } from "lucide-react";
 
@@ -33,13 +34,27 @@ export function EventChip({
 }) {
   const [open, setOpen] = React.useState(false);
   const { openDeal } = useDealUI();
-  const { mutate: removeEvent, isPending: deleting } = useDeleteEvent();
+  const { mutate: removeEvent, isPending: deletingEvent } = useDeleteEvent();
+  const { mutate: removeDeal, isPending: deletingDeal } = useDeleteDeal();
 
   const isEditable = item.kind === "event";
+  const deleting = deletingEvent || deletingDeal;
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    removeEvent(item.id, { onSuccess: () => setOpen(false) });
+    if (item.kind === "event") {
+      removeEvent(item.id, { onSuccess: () => setOpen(false) });
+      return;
+    }
+    // kind === "deal-deadline": exclui o processo inteiro, não só o marcador — ação
+    // destrutiva e irreversível (remove notas, lembretes, anexos e auditoria junto),
+    // por isso pede confirmação antes.
+    if (!item.dealId) return;
+    const confirmed = window.confirm(
+      `Excluir o processo "${item.title}"? Esta ação não pode ser desfeita e remove todo o histórico vinculado a ele.`
+    );
+    if (!confirmed) return;
+    removeDeal(item.dealId, { onSuccess: () => setOpen(false) });
   };
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -86,23 +101,23 @@ export function EventChip({
             <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
             <h3 className="min-w-0 break-words text-sm font-semibold">{item.title}</h3>
           </div>
-          {isEditable && (
-            <div className="flex shrink-0 items-center gap-0.5">
+          <div className="flex shrink-0 items-center gap-0.5">
+            {isEditable && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleEdit} aria-label="Editar evento">
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={handleDelete}
-                disabled={deleting}
-                aria-label="Excluir evento"
-              >
-                {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 text-destructive" />}
-              </Button>
-            </div>
-          )}
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleDelete}
+              disabled={deleting}
+              aria-label={item.kind === "event" ? "Excluir evento" : "Excluir processo"}
+            >
+              {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 text-destructive" />}
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-2.5 p-3 text-sm">

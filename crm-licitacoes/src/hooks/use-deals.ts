@@ -101,6 +101,9 @@ export function useDeleteDeal() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["deals"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      // Processos aparecem no Calendário como marcadores derivados ao vivo — sem isso,
+      // um processo excluído pelo popover do calendário continuaria visível ali.
+      qc.invalidateQueries({ queryKey: ["calendar-items"] });
       toast.success("Processo excluído.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao excluir processo."),
