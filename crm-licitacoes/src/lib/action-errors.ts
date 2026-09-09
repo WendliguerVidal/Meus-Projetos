@@ -2,6 +2,12 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 
+/** Resultado padronizado de Server Actions que não podem deixar uma exceção crua subir
+ * ao cliente (o que viraria o erro genérico "An error occurred in the Server Components
+ * render" em produção) — sempre `{ success: true, data }` ou `{ success: false, error }`
+ * com uma mensagem amigável em português. */
+export type ActionResult<T = null> = { success: true; data: T } | { success: false; error: string };
+
 /**
  * Converte qualquer erro capturado numa Server Action numa mensagem amigável para
  * exibir ao usuário (ex: num toast), em vez de deixar a exceção subir e virar o erro

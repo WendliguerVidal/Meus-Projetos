@@ -8,12 +8,9 @@ import { eventSchema, type EventFormValues, EVENT_STATUS_LABELS, EVENT_STATUS_CO
 import { CATEGORY_COLORS, CATEGORY_LABELS, NON_ARCHIVED_CATEGORIES, type DealCategory } from "@/types/deal";
 import type { CalendarItem, EventStatus } from "@/types/event";
 import type { Prisma } from "@prisma/client";
-import { toFriendlyErrorMessage } from "@/lib/action-errors";
+import { toFriendlyErrorMessage, type ActionResult } from "@/lib/action-errors";
 
-/** Resultado padronizado das mutações de Event — nunca deixa uma exceção subir e virar
- * o erro genérico "An error occurred in the Server Components render" no cliente; o
- * formulário sempre recebe `{ success: false, error }` com uma mensagem amigável. */
-export type ActionResult<T = null> = { success: true; data: T } | { success: false; error: string };
+export type { ActionResult };
 
 export type CalendarFilters = {
   start: Date;

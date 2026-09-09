@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { Bell, LogOut, Plus, Search, User as UserIcon } from "lucide-react";
+import { Bell, LogOut, Plus, Search, Sparkles, User as UserIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { initials, formatDate, isOverdue } from "@/lib/utils";
 import { useTodayReminders } from "@/hooks/use-reminders";
 import { useDealUI } from "@/components/deal-details/deal-ui-context";
+import { ImportEditalDialog } from "@/components/deal-details/import-edital-dialog";
 
 export function Header({ search, onSearchChange }: { search: string; onSearchChange: (v: string) => void }) {
   const { data: session } = useSession();
@@ -27,6 +28,7 @@ export function Header({ search, onSearchChange }: { search: string; onSearchCha
   const { openNewDeal, openDeal } = useDealUI();
   const { data: reminders } = useTodayReminders();
   const pendingCount = reminders?.length ?? 0;
+  const [importOpen, setImportOpen] = React.useState(false);
 
   return (
     <header className="flex h-14 items-center gap-3 border-b bg-background px-4">
@@ -45,6 +47,12 @@ export function Header({ search, onSearchChange }: { search: string; onSearchCha
           <Plus className="h-4 w-4" />
           Novo Processo
         </Button>
+
+        <Button onClick={() => setImportOpen(true)} size="sm" variant="outline" className="gap-1.5">
+          <Sparkles className="h-4 w-4" />
+          Importar Edital (PDF)
+        </Button>
+        <ImportEditalDialog open={importOpen} onOpenChange={setImportOpen} />
 
         <Popover>
           <PopoverTrigger asChild>
