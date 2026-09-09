@@ -37,6 +37,7 @@ export function useCreateDealFromEdital() {
       qc.invalidateQueries({ queryKey: ["deals"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       qc.invalidateQueries({ queryKey: ["calendar-items"] });
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
       toast.success("Processo importado com sucesso a partir do edital.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao salvar o processo importado."),

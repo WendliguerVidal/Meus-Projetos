@@ -47,6 +47,9 @@ export function useCreateDeal() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["deals"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      // Um processo recém-criado já pode nascer com prazo urgente — atualiza o sino de
+      // notificações do cabeçalho sem esperar o refetch periódico.
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
       toast.success("Processo criado com sucesso.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao criar processo."),
@@ -62,6 +65,7 @@ export function useUpdateDeal() {
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       qc.invalidateQueries({ queryKey: ["audit-logs", variables.id] });
       qc.invalidateQueries({ queryKey: ["deal", variables.id] });
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
       toast.success("Processo atualizado.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao atualizar processo."),
@@ -90,6 +94,9 @@ export function useMoveDeal() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["deals"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      // Mover para uma categoria encerrada (Ganho/Perdido/Concluído/Arquivado) ou de
+      // volta para uma aberta muda se o prazo conta como urgente.
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
     },
   });
 }
@@ -104,6 +111,7 @@ export function useDeleteDeal() {
       // Processos aparecem no Calendário como marcadores derivados ao vivo — sem isso,
       // um processo excluído pelo popover do calendário continuaria visível ali.
       qc.invalidateQueries({ queryKey: ["calendar-items"] });
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
       toast.success("Processo excluído.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao excluir processo."),

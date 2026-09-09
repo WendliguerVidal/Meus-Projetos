@@ -6,10 +6,12 @@ import { ptBR } from "date-fns/locale";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { UrgencyBadge, UrgencyDot } from "@/components/ui/urgency-badge";
 import { useDealUI } from "@/components/deal-details/deal-ui-context";
 import { useDeleteEvent } from "@/hooks/use-events";
 import { useDeleteDeal } from "@/hooks/use-deals";
 import type { CalendarItem } from "@/types/event";
+import { formatUrgencyMessage } from "@/lib/urgency";
 import { Building2, Clock, ExternalLink, Loader2, Pencil, Trash2 } from "lucide-react";
 
 function formatDateTimeRange(start: Date, end: Date | null): string {
@@ -74,11 +76,12 @@ export function EventChip({
           <button
             type="button"
             onClick={(e) => e.stopPropagation()}
-            className="block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-white transition-opacity hover:opacity-90"
+            className="relative flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-white transition-opacity hover:opacity-90"
             style={{ backgroundColor: item.color }}
-            title={item.title}
+            title={item.urgencyLevel ? `${item.title} — ${formatUrgencyMessage(item.startDate)}` : item.title}
           >
-            {item.title}
+            {item.urgencyLevel && <UrgencyDot level={item.urgencyLevel} className="shrink-0" />}
+            <span className="truncate">{item.title}</span>
           </button>
         ) : (
           <button
@@ -88,7 +91,10 @@ export function EventChip({
             style={{ borderLeftColor: item.color }}
           >
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-medium">{item.title}</span>
+              <span className="flex items-center gap-1 truncate font-medium">
+                {item.urgencyLevel && <UrgencyDot level={item.urgencyLevel} className="shrink-0" />}
+                <span className="truncate">{item.title}</span>
+              </span>
               <span className="text-muted-foreground">{format(item.startDate, "HH:mm")}</span>
             </span>
           </button>
@@ -126,9 +132,12 @@ export function EventChip({
             <span>{formatDateTimeRange(item.startDate, item.endDate)}</span>
           </div>
 
-          <Badge variant="secondary" className="font-normal">
-            {item.statusLabel}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="font-normal">
+              {item.statusLabel}
+            </Badge>
+            {item.urgencyLevel && <UrgencyBadge date={item.startDate} level={item.urgencyLevel} />}
+          </div>
 
           {item.org && (
             <div className="flex items-center gap-2 text-muted-foreground">

@@ -9,6 +9,7 @@ import { CATEGORY_COLORS, CATEGORY_LABELS, NON_ARCHIVED_CATEGORIES, type DealCat
 import type { CalendarItem, EventStatus } from "@/types/event";
 import type { Prisma } from "@prisma/client";
 import { toFriendlyErrorMessage, type ActionResult } from "@/lib/action-errors";
+import { getDealUrgency, getEventUrgency } from "@/lib/urgency";
 
 export type { ActionResult };
 
@@ -86,6 +87,10 @@ export async function listCalendarItems(filters: CalendarFilters): Promise<Calen
     estimatedValue: null,
     dealId: d.id,
     org: d.client,
+    // Urgência calculada a partir do prazo de verdade (`deadline`), nunca do fallback
+    // usado só para posicionar o marcador no dia (createdAt/updatedAt) — sem prazo
+    // definido não há nada de "atrasado" a destacar.
+    urgencyLevel: getDealUrgency(d.deadline, d.category),
   }));
 
   const eventItems: CalendarItem[] = events.map((e) => ({
@@ -101,6 +106,7 @@ export async function listCalendarItems(filters: CalendarFilters): Promise<Calen
     estimatedValue: e.estimatedValue,
     dealId: e.dealId,
     org: e.deal?.client ?? null,
+    urgencyLevel: getEventUrgency(e.startDate, e.status),
   }));
 
   return [...deadlineItems, ...eventItems].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());

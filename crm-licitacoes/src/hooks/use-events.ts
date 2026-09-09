@@ -38,6 +38,7 @@ export function useCreateEvent() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["calendar-items"] });
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
       toast.success("Evento criado.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao criar evento."),
@@ -54,6 +55,7 @@ export function useUpdateEvent() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["calendar-items"] });
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
       toast.success("Evento atualizado.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao atualizar evento."),
@@ -69,6 +71,7 @@ export function useDeleteEvent() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["calendar-items"] });
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
       toast.success("Evento excluído.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao excluir evento."),

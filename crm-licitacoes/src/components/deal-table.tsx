@@ -6,7 +6,9 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { cn, formatDate, initials, isOverdue } from "@/lib/utils";
+import { UrgencyBadge } from "@/components/ui/urgency-badge";
+import { cn, formatDate, initials } from "@/lib/utils";
+import { getDealUrgency } from "@/lib/urgency";
 import { DEAL_CATEGORIES, CATEGORY_COLORS, CATEGORY_LABELS, type DealCategory } from "@/types/deal";
 import { useDealUI } from "@/components/deal-details/deal-ui-context";
 import type { DealWithRelations } from "@/types";
@@ -100,9 +102,7 @@ export function DealTable({
                     </TableHeader>
                     <TableBody>
                       {items.map((deal) => {
-                        const overdue =
-                          isOverdue(deal.deadline) &&
-                          !["GANHO", "PERDIDO", "CONCLUIDO", "ARQUIVADO"].includes(deal.category);
+                        const urgency = getDealUrgency(deal.deadline, deal.category);
                         return (
                           <TableRow key={deal.id} className="cursor-pointer" onClick={() => openDeal(deal.id)}>
                             <TableCell className="max-w-[280px] truncate font-medium">{deal.title}</TableCell>
@@ -125,8 +125,11 @@ export function DealTable({
                                 <span className="text-xs text-muted-foreground">—</span>
                               )}
                             </TableCell>
-                            <TableCell className={cn("whitespace-nowrap text-xs", overdue && "font-semibold text-destructive")}>
-                              {formatDate(deal.deadline)}
+                            <TableCell className={cn("whitespace-nowrap text-xs", urgency === "OVERDUE" && "font-semibold text-destructive")}>
+                              <div className="flex flex-col items-start gap-1">
+                                <span>{formatDate(deal.deadline)}</span>
+                                {deal.deadline && urgency && <UrgencyBadge date={deal.deadline} level={urgency} />}
+                              </div>
                             </TableCell>
                           </TableRow>
                         );

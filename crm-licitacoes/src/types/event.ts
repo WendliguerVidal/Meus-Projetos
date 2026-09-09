@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { UrgencyLevel } from "@/lib/urgency";
 
 // ---------------------------------------------------------------------------
 // Status de Evento do Calendário
@@ -66,6 +67,10 @@ export type EventFormValues = z.infer<typeof eventSchema>;
 // ---------------------------------------------------------------------------
 
 export type CalendarItem = {
+  /** Urgência do prazo (🔴 atrasado/vence agora · 🟡 até 3 dias · 🟢 tranquilo), já
+   * calculada no servidor (considera se o processo/evento está encerrado) — `null`
+   * quando não há nada a destacar. */
+  urgencyLevel: UrgencyLevel | null;
   id: string;
   /** `event`: registro real da tabela Event (editável/excluível aqui).
    *  `deal-deadline`: prazo de um processo (Deal.deadline), somente-leitura — editar

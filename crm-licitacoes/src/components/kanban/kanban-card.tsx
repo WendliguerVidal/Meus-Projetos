@@ -5,7 +5,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { cn, formatDate, initials, isOverdue } from "@/lib/utils";
+import { UrgencyBadge } from "@/components/ui/urgency-badge";
+import { cn, formatDate, initials } from "@/lib/utils";
+import { getDealUrgency } from "@/lib/urgency";
 import { useDealUI } from "@/components/deal-details/deal-ui-context";
 import type { DealWithRelations } from "@/types";
 import { MapPin, CalendarClock } from "lucide-react";
@@ -18,7 +20,7 @@ export function KanbanCard({ deal }: { deal: DealWithRelations }) {
     ? { transform: CSS.Translate.toString(transform), zIndex: isDragging ? 50 : undefined }
     : undefined;
 
-  const overdue = isOverdue(deal.deadline) && !["GANHO", "PERDIDO", "CONCLUIDO", "ARQUIVADO"].includes(deal.category);
+  const urgency = getDealUrgency(deal.deadline, deal.category);
 
   return (
     <Card
@@ -42,11 +44,17 @@ export function KanbanCard({ deal }: { deal: DealWithRelations }) {
           </span>
         </div>
         {deal.deadline && (
-          <div className={cn("flex items-center gap-1 text-xs", overdue ? "text-destructive font-medium" : "text-muted-foreground")}>
+          <div
+            className={cn(
+              "flex items-center gap-1 text-xs",
+              urgency === "OVERDUE" ? "font-medium text-destructive" : "text-muted-foreground"
+            )}
+          >
             <CalendarClock className="h-3 w-3" />
             <span>{formatDate(deal.deadline)}</span>
           </div>
         )}
+        {deal.deadline && urgency && <UrgencyBadge date={deal.deadline} level={urgency} />}
         <div className="flex items-center justify-between pt-1">
           <Badge variant="outline" className="text-[10px]">
             {deal.status}
