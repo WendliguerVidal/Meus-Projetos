@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,7 @@ export function EventFormDialog({
 
   const status = watch("status");
   const dealId = watch("dealId");
+  const estimatedValue = watch("estimatedValue");
 
   const onSubmit = (data: EventFormValues) => {
     const payload = { ...data, endDate: hasEndDate ? data.endDate : null };
@@ -188,8 +190,12 @@ export function EventFormDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="event-value">Valor Estimado (R$)</Label>
-              <Input id="event-value" type="number" step="0.01" min="0" placeholder="0,00" {...register("estimatedValue")} />
+              <Label htmlFor="event-value">Valor Estimado</Label>
+              <CurrencyInput
+                id="event-value"
+                value={typeof estimatedValue === "number" ? estimatedValue : null}
+                onValueChange={(v) => setValue("estimatedValue", v)}
+              />
               {errors.estimatedValue && <p className="text-xs text-destructive">{errors.estimatedValue.message}</p>}
             </div>
           </div>

@@ -35,10 +35,17 @@ export const eventSchema = z
       z.coerce.date().nullable()
     ).optional(),
     status: z.enum(EVENT_STATUSES),
-    estimatedValue: z.preprocess(
-      (v) => (v === "" || v === undefined || v === null ? null : Number(v)),
-      z.number().nonnegative("Valor deve ser positivo").nullable()
-    ).optional(),
+    // O CurrencyInput do formulário já envia um number pronto (em reais), mas este
+    // preprocess aceita defensivamente também uma string no formato BR ("999999,98")
+    // — troca vírgula decimal por ponto antes de converter — caso o valor chegue de
+    // outra origem (ex: chamada direta da Server Action fora do formulário mascarado).
+    estimatedValue: z.preprocess((v) => {
+      if (v === "" || v === undefined || v === null) return null;
+      if (typeof v === "number") return v;
+      const normalized = String(v).trim().replace(",", ".");
+      const parsed = Number(normalized);
+      return Number.isNaN(parsed) ? v : parsed;
+    }, z.number({ invalid_type_error: "Valor estimado inválido" }).nonnegative("Valor deve ser positivo").nullable()).optional(),
     dealId: z.string().optional().nullable(),
   })
   .superRefine((data, ctx) => {
