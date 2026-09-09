@@ -33,14 +33,14 @@ export function MiniMonth({
     <div className="select-none">
       {onMonthChange && (
         <div className="mb-1.5 flex items-center justify-between px-0.5">
-          <span className={cn("font-medium capitalize", size === "sm" ? "text-sm" : "text-xs")}>
+          <span className={cn("font-medium capitalize text-foreground", size === "sm" ? "text-sm" : "text-xs")}>
             {format(month, "MMMM 'de' yyyy", { locale: ptBR })}
           </span>
           <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => onMonthChange(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-              className="rounded p-0.5 hover:bg-sidebar-accent"
+              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Mês anterior"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -48,7 +48,7 @@ export function MiniMonth({
             <button
               type="button"
               onClick={() => onMonthChange(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-              className="rounded p-0.5 hover:bg-sidebar-accent"
+              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Próximo mês"
             >
               <ChevronRight className="h-3.5 w-3.5" />
@@ -59,7 +59,7 @@ export function MiniMonth({
 
       <div className={cn("grid grid-cols-7 gap-y-0.5 text-center", size === "sm" ? "text-[11px]" : "text-[9px]")}>
         {WEEKDAY_LETTERS.map((d, i) => (
-          <div key={i} className="text-sidebar-foreground/40">
+          <div key={i} className="font-medium text-muted-foreground">
             {d}
           </div>
         ))}
@@ -75,8 +75,8 @@ export function MiniMonth({
               className={cn(
                 "relative mx-auto flex items-center justify-center rounded-full transition-colors",
                 size === "sm" ? "h-6 w-6" : "h-5 w-5",
-                !inMonth && "text-sidebar-foreground/25",
-                inMonth && !isSelected && "text-sidebar-foreground/80 hover:bg-sidebar-accent",
+                !inMonth && "text-muted-foreground/70",
+                inMonth && !isSelected && "text-foreground hover:bg-accent",
                 isToday && !isSelected && "text-primary font-semibold",
                 isSelected && "bg-primary text-primary-foreground font-semibold"
               )}

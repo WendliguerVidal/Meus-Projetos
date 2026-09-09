@@ -29,8 +29,8 @@ export function DayView({
   return (
     <div className="mx-auto max-w-2xl p-4">
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm capitalize text-muted-foreground">
-          {format(currentDate, "EEEE", { locale: ptBR })}
+        <p className="text-sm font-semibold capitalize text-foreground">
+          {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
         </p>
         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => onDayClick(currentDate)}>
           <CalendarPlus className="h-3.5 w-3.5" />

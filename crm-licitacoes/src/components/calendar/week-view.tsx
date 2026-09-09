@@ -32,10 +32,10 @@ export function WeekView({
         return (
           <div key={day.toISOString()} className="flex min-h-0 flex-col">
             <div className={cn("flex flex-col items-center gap-0.5 border-b py-2", isToday && "bg-primary/5")}>
-              <span className="text-xs text-muted-foreground">{format(day, "EEE", { locale: ptBR })}</span>
+              <span className="text-xs font-medium text-muted-foreground">{format(day, "EEE", { locale: ptBR })}</span>
               <span
                 className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-full text-sm",
+                  "flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium text-foreground",
                   isToday && "bg-primary font-semibold text-primary-foreground"
                 )}
               >

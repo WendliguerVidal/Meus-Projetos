@@ -27,7 +27,7 @@ export function MonthView({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="grid grid-cols-7 border-b text-center text-xs font-medium text-muted-foreground">
+      <div className="grid grid-cols-7 border-b text-center text-xs font-semibold text-foreground">
         {WEEKDAY_LABELS.map((label) => (
           <div key={label} className="py-2">
             {label}
@@ -57,8 +57,8 @@ export function MonthView({
             >
               <span
                 className={cn(
-                  "mb-0.5 flex h-6 w-6 items-center justify-center rounded-full text-xs",
-                  !inMonth && "text-muted-foreground/50",
+                  "mb-0.5 flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium text-foreground",
+                  !inMonth && "text-muted-foreground",
                   isToday && "bg-primary font-semibold text-primary-foreground"
                 )}
               >

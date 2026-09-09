@@ -57,7 +57,7 @@ export function CalendarHeader({
         </Button>
       </div>
 
-      <h1 className={cn("min-w-0 flex-1 truncate text-lg font-semibold capitalize")}>
+      <h1 className={cn("min-w-0 flex-1 truncate text-lg font-semibold capitalize text-foreground")}>
         {formatViewTitle(view, currentDate)}
       </h1>
 

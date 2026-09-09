@@ -14,20 +14,38 @@ export type CalendarFilters = {
   end: Date;
   /** Quando informado, restringe os Events (não os prazos de Deal) a esses status. */
   statuses?: EventStatus[];
-  /** Mostrar prazos de processos em andamento/paralisados como marcadores automáticos. */
+  /** Mostrar processos (licitações) ativos como marcadores automáticos. */
   includeDealDeadlines?: boolean;
 };
 
-/** Lista os itens do calendário no intervalo informado: prazos de processos (Deal.deadline)
- * + Events criados manualmente, já filtrados pelo RBAC por estado do usuário. */
+/** "Ativa" = qualquer processo que não esteja arquivado — cobre todo o pipeline
+ * (Andamento, Paralisada, Ganho, Perdido, Garantia, Concluído), não só os em aberto. */
+const ACTIVE_DEAL_CATEGORIES: DealCategory[] = [
+  "ANDAMENTO",
+  "PARALISADA",
+  "GANHO",
+  "PERDIDO",
+  "GARANTIA",
+  "CONCLUIDO",
+];
+
+/** Lista os itens do calendário no intervalo informado: processos ativos (posicionados pelo
+ * prazo, ou pela data de criação quando não há prazo) + Events criados manualmente, já
+ * filtrados pelo RBAC por estado do usuário. */
 export async function listCalendarItems(filters: CalendarFilters): Promise<CalendarItem[]> {
   const user = await requireUser();
   const scoped = user.role === "ADMIN" ? "all" : user.allowedStates;
   const { start, end, statuses, includeDealDeadlines = true } = filters;
 
   const dealWhere: Prisma.DealWhereInput = {
-    deadline: { gte: start, lte: end },
-    category: { in: ["ANDAMENTO", "PARALISADA"] },
+    category: { in: ACTIVE_DEAL_CATEGORIES },
+    // A maioria dos processos reais não tem `deadline` preenchido — em vez de ficarem
+    // invisíveis no calendário, eles caem no dia em que o processo foi criado
+    // (`createdAt`), que é sempre exibida como a "data principal" pelo mapeamento abaixo.
+    OR: [
+      { deadline: { gte: start, lte: end } },
+      { deadline: null, createdAt: { gte: start, lte: end } },
+    ],
     ...(scoped !== "all" ? { state: { in: scoped } } : {}),
   };
 
@@ -44,7 +62,10 @@ export async function listCalendarItems(filters: CalendarFilters): Promise<Calen
 
   const [deals, events] = await Promise.all([
     includeDealDeadlines
-      ? prisma.deal.findMany({ where: dealWhere, select: { id: true, title: true, client: true, category: true, deadline: true } })
+      ? prisma.deal.findMany({
+          where: dealWhere,
+          select: { id: true, title: true, client: true, category: true, deadline: true, createdAt: true },
+        })
       : Promise.resolve([]),
     prisma.event.findMany({
       where: eventWhere,
@@ -58,7 +79,7 @@ export async function listCalendarItems(filters: CalendarFilters): Promise<Calen
     kind: "deal-deadline",
     title: d.title,
     description: null,
-    startDate: d.deadline as Date,
+    startDate: d.deadline ?? d.createdAt,
     endDate: null,
     status: "ABERTO",
     statusLabel: CATEGORY_LABELS[d.category as DealCategory] ?? d.category,

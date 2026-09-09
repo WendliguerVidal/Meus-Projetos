@@ -44,16 +44,16 @@ export function CalendarSidebar({
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Filtros</p>
 
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <Checkbox checked={showDealDeadlines} onCheckedChange={(c) => onToggleDealDeadlines(!!c)} />
           <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
-          Prazos de licitações
+          Processos / licitações
         </label>
 
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">Status dos eventos</p>
           {EVENT_STATUSES.map((status) => (
-            <label key={status} className="flex items-center gap-2 text-sm">
+            <label key={status} className="flex items-center gap-2 text-sm text-foreground">
               <Checkbox checked={visibleStatuses.includes(status)} onCheckedChange={() => onToggleStatus(status)} />
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: EVENT_STATUS_COLORS[status] }} />
               {EVENT_STATUS_LABELS[status]}
