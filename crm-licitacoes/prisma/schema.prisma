@@ -39,8 +39,7 @@ model User {
   reminders              Reminder[]       @relation("ReminderAssignedTo")
   auditLogs              AuditLog[]
   eventsCreated          Event[]          @relation("EventCreatedBy")
-  documentFoldersCreated DocumentFolder[] @relation("DocumentFolderCreatedBy")
-  documentFilesUploaded  DocumentFile[]   @relation("DocumentFileUploadedBy")
+  
 
   @@map("users")
 }
