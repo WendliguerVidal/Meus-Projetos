@@ -46,10 +46,16 @@ export function RemindersTab({ dealId }: { dealId: string }) {
   } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: { assignedToId: "", dueDate: "", description: "" } });
 
   const onSubmit = (data: FormValues) => {
+  // Garante que a data seja convertida para string ISO, mesmo se o formulário entregar um objeto Date
+  const rawDate = data.dueDate as unknown;
+  const formattedDate = rawDate instanceof Date 
+    ? rawDate.toISOString() 
+    : new Date(String(rawDate)).toISOString();
+
   create({
     dealId,
     assignedToId: data.assignedToId,
-    dueDate: new Date(data.dueDate).toISOString(), // Garante que envia como string ISO pura
+    dueDate: formattedDate,
     description: data.description,
   });
 };
