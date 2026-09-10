@@ -51,9 +51,12 @@ export async function createReminder(input: {
   assertCanAccessState(user, deal.state);
 
   const reminder = await prisma.reminder.create({
-    data,
-    include: { assignedTo: true },
-  });
+  data: {
+    ...data,
+    dueDate: new Date(data.dueDate),
+  },
+  include: { assignedTo: true },
+});
 
   await logAudit({ dealId: data.dealId, userId: user.id, action: `Criou lembrete: "${data.description}"` });
 
