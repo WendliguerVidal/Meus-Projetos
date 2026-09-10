@@ -45,24 +45,16 @@ export function RemindersTab({ dealId }: { dealId: string }) {
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: { assignedToId: "", dueDate: "", description: "" } });
 
- const onSubmit = (data: FormValues) => {
-  // Conversão de data compatível com o formulário
-  const dueDateValue = typeof data.dueDate === "string" 
-    ? data.dueDate 
-    : new Date(data.dueDate).toISOString();
-
-  create({
-    dealId,
-    assignedToId: data.assignedToId,
-    dueDate: dueDateValue,
-    description: data.description,
-  });
-};
-  // 3. Purifica o objeto destruindo propriedades ocultas (Proxys/Classes)
-  const safePayload = JSON.parse(JSON.stringify(rawPayload));
-
-  create(safePayload);
-};
+  const onSubmit = (data: FormValues) => {
+    create({
+      dealId,
+      assignedToId: data.assignedToId,
+      dueDate: data.dueDate,
+      description: data.description,
+    });
+    reset();
+    setShowForm(false);
+  };
 
   const pending = reminders?.filter((r) => r.status === "PENDING") ?? [];
   const done = reminders?.filter((r) => r.status === "DONE") ?? [];

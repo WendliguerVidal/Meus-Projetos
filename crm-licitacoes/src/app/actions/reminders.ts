@@ -44,51 +44,33 @@ export async function createReminder(input: {
   dueDate: string;
   description: string;
 }) {
-  const user = await requireUser();
-  const data = reminderSchema.parse(input);
+  try {
+    const user = await requireUser();
+    const data = reminderSchema.parse(input);
 
-  const deal = await prisma.deal.findUniqueOrThrow({ where: { id: data.dealId } });
-  assertCanAccessState(user, deal.state);
+    const deal = await prisma.deal.findUniqueOrThrow({ where: { id: data.dealId } });
+    assertCanAccessState(user, deal.state);
 
-  const reminder = await prisma.reminder.create({
-    data: {
-      dealId: data.dealId,
-      assignedToId: data.assignedToId,
-      description: data.description,
-      dueDate: new Date(data.dueDate),
-    },
-    include: { assignedTo: true },
-  });
+    const reminder = await prisma.reminder.create({
+      data: {
+        dealId: data.dealId,
+        assignedToId: data.assignedToId,
+        description: data.description,
+        dueDate: new Date(data.dueDate),
+      },
+      include: { assignedTo: true },
+    });
 
-  await logAudit({ dealId: data.dealId, userId: user.id, action: `Criou lembrete: ${data.description}` });
-  revalidatePath("/");
+    await logAudit({ dealId: data.dealId, userId: user.id, action: `Criou lembrete: "${data.description}"` });
+    revalidatePath("/");
 
-  // Garante a serialização correta para o Server Action do Next.js
-  return JSON.parse(JSON.stringify(reminder));
-}
-
-  await logAudit({ dealId: data.dealId, userId: user.id, action: `Criou lembrete: ${data.description}` });
-  revalidatePath("/");
-
-  return JSON.parse(JSON.stringify(reminder));
-}
-
+    // Garante que apenas um objeto plano (sem classes/Date/prototypes) volte para o Server Action.
     return JSON.parse(JSON.stringify(reminder));
-    
   } catch (error: any) {
-    // CAPTURA DE ERRO SEGURA: 
-    // Evita que classes complexas (como erros do Prisma/Zod) voltem pro cliente e travem o Next.js
+    // Evita que classes complexas (erros do Prisma/Zod) voltem pro cliente e travem o Next.js.
     console.error("Erro interno ao criar lembrete:", error);
-    
-    // O Next.js aceita a classe nativa 'Error' contendo apenas uma string
-    throw new Error(typeof error?.message === 'string' ? error.message : "Falha ao processar a criação do lembrete.");
+    throw new Error(typeof error?.message === "string" ? error.message : "Falha ao processar a criação do lembrete.");
   }
-}
-
-  await logAudit({ dealId: data.dealId, userId: user.id, action: `Criou lembrete: "${data.description}"` });
-
-  revalidatePath("/");
-  return reminder;
 }
 
 export async function setReminderStatus(input: { id: string; status: "PENDING" | "DONE" }) {
@@ -114,5 +96,5 @@ export async function setReminderStatus(input: { id: string; status: "PENDING" |
   });
 
   revalidatePath("/");
-  return reminder;
+  return JSON.parse(JSON.stringify(reminder));
 }
