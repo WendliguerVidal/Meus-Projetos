@@ -99,13 +99,14 @@ model Deal {
 /// Gerais" do formulário. Persistidos junto com o restante do formulário (sem Server Action
 /// própria por item) — ver updateDeal/createDeal em actions/deals.ts.
 model DealItem {
-  id       String  @id @default(cuid())
-  object   String
-  model    String?
-  lot      String?
-  quantity Int     @default(1)
-  dealId   String
-  deal     Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  object    String
+  model     String?
+  lot       String?
+  quantity  Int      @default(1)
+  dealId    String
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 
   @@map("deal_items")
 }
