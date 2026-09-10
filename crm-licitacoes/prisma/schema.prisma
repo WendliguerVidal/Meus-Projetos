@@ -33,14 +33,12 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  dealsCreated           Deal[]           @relation("DealCreatedBy")
-  dealsAssigned          Deal[]           @relation("DealAssignedTo")
-  notes                  Note[]
-  reminders              Reminder[]       @relation("ReminderAssignedTo")
-  auditLogs              AuditLog[]
-  eventsCreated          Event[]          @relation("EventCreatedBy")
-  documentFoldersCreated DocumentFolder[] @relation("DocumentFolderCreatedBy")
-  documentFilesUploaded  DocumentFile[]   @relation("DocumentFileUploadedBy")
+  dealsCreated  Deal[]     @relation("DealCreatedBy")
+  dealsAssigned Deal[]     @relation("DealAssignedTo")
+  notes         Note[]
+  reminders     Reminder[] @relation("ReminderAssignedTo")
+  auditLogs     AuditLog[]
+  eventsCreated Event[]    @relation("EventCreatedBy")
 
   @@map("users")
 }
@@ -190,8 +188,10 @@ model DocumentFolder {
   parent     DocumentFolder?  @relation("DocumentFolderSubfolders", fields: [parentId], references: [id], onDelete: Cascade)
   subfolders DocumentFolder[] @relation("DocumentFolderSubfolders")
 
-  createdById String
-  createdBy   User   @relation("DocumentFolderCreatedBy", fields: [createdById], references: [id])
+  // String livre (nome/e-mail do autor no momento da criação) em vez de FK para User —
+  // evita erro de chave estrangeira caso o id de sessão não bata com um User existente
+  // no banco de produção (causa raiz de um problema real já visto neste projeto).
+  createdBy String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -212,7 +212,7 @@ model DocumentFolder {
 model DocumentFile {
   id       String @id @default(cuid())
   name     String
-  url      String
+  url      String @db.Text
   fileType String
   size     Int // bytes
 
@@ -222,10 +222,11 @@ model DocumentFile {
   folderId String
   folder   DocumentFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
 
-  uploadedById String
-  uploadedBy   User   @relation("DocumentFileUploadedBy", fields: [uploadedById], references: [id])
+  // Mesmo raciocínio de DocumentFolder.createdBy acima — string livre, não FK.
+  uploadedBy String?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([folderId])
   @@index([expiryDate])

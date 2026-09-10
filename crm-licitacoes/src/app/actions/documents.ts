@@ -80,7 +80,7 @@ export async function createStateFolder(input: { state: string }): Promise<Actio
         name: data.state,
         state: data.state,
         color: randomFolderColor(),
-        createdById: user.id,
+        createdBy: user.name || user.email || "Usuário",
       },
       include: folderInclude,
     });
@@ -106,7 +106,7 @@ export async function createSubfolder(parentId: string, input: { name: string })
     }
 
     const folder = await prisma.documentFolder.create({
-      data: { name: data.name, parentId, color: randomFolderColor(), createdById: user.id },
+      data: { name: data.name, parentId, color: randomFolderColor(), createdBy: user.name || user.email || "Usuário" },
       include: folderInclude,
     });
 
@@ -217,7 +217,7 @@ export async function uploadFile(formData: FormData): Promise<ActionResult<Docum
         size: file.size,
         expiryDate: meta.expiryDate ?? null,
         notes: meta.notes || null,
-        uploadedById: user.id,
+        uploadedBy: user.name || user.email || "Usuário",
       },
     });
 
