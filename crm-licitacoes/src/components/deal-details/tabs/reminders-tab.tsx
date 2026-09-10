@@ -45,26 +45,19 @@ export function RemindersTab({ dealId }: { dealId: string }) {
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: { assignedToId: "", dueDate: "", description: "" } });
 
-  const onSubmit = (data: FormValues) => {
-  // 1. Extração segura da data
-  let isoString = "";
-  try {
-    isoString = data.dueDate instanceof Date 
-      ? data.dueDate.toISOString() 
-      : new Date(String(data.dueDate)).toISOString();
-  } catch (err) {
-    console.error("Erro ao ler a data selecionada");
-    return;
-  }
+ const onSubmit = (data: FormValues) => {
+  // Conversão segura e limpa compatível com o TypeScript
+  const dueDateValue = typeof data.dueDate === "string" 
+    ? data.dueDate 
+    : new Date(data.dueDate).toISOString();
 
-  // 2. Montamos um objeto limpo forçando ser string pura
-  const rawPayload = {
-    dealId: String(dealId),
-    assignedToId: String(data.assignedToId),
-    dueDate: isoString,
-    description: String(data.description),
-  };
-
+  create({
+    dealId,
+    assignedToId: data.assignedToId,
+    dueDate: dueDateValue,
+    description: data.description,
+  });
+};
   // 3. Purifica o objeto destruindo propriedades ocultas (Proxys/Classes)
   const safePayload = JSON.parse(JSON.stringify(rawPayload));
 
