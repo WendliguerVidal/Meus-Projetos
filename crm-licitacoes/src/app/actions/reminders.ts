@@ -44,24 +44,27 @@ export async function createReminder(input: {
   dueDate: string;
   description: string;
 }) {
-  try {
-    const user = await requireUser();
-    
-    // Se o Zod falhar aqui, ele lança um erro que trataremos no catch
-    const data = reminderSchema.parse(input);
+  const user = await requireUser();
+  const data = reminderSchema.parse(input);
 
-    const deal = await prisma.deal.findUniqueOrThrow({ where: { id: data.dealId } });
-    assertCanAccessState(user, deal.state);
+  const deal = await prisma.deal.findUniqueOrThrow({ where: { id: data.dealId } });
+  assertCanAccessState(user, deal.state);
 
-    const reminder = await prisma.reminder.create({
-      data: {
-        dealId: data.dealId,
-        assignedToId: data.assignedToId,
-        description: data.description,
-        dueDate: new Date(data.dueDate),
-      },
-      include: { assignedTo: true },
-    });
+  const reminder = await prisma.reminder.create({
+    data: {
+      dealId: data.dealId,
+      assignedToId: data.assignedToId,
+      description: data.description,
+      dueDate: new Date(data.dueDate),
+    },
+    include: { assignedTo: true },
+  });
+
+  await logAudit({ dealId: data.dealId, userId: user.id, action: `Criou lembrete: ${data.description}` });
+  revalidatePath("/");
+
+  return JSON.parse(JSON.stringify(reminder));
+}
 
     return JSON.parse(JSON.stringify(reminder));
     
