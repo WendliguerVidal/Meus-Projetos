@@ -66,3 +66,10 @@ const MONTH_LABELS_PT = [
 export function monthLabel(month: number): string {
   return MONTH_LABELS_PT[month - 1] ?? String(month);
 }
+
+/** Formata um tamanho em bytes para exibição (ex: "482 KB", "1.3 MB"). */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}

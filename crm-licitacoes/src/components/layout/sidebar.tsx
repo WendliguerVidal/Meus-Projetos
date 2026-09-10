@@ -17,6 +17,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Gavel,
+  FolderKanban,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS, CATEGORY_LABELS, type DealCategory } from "@/types/deal";
@@ -116,6 +117,13 @@ export function Sidebar({
               Outros
             </p>
           )}
+          <NavItem
+            href="/documentos"
+            icon={FolderKanban}
+            label="Documentos"
+            active={pathname === "/documentos"}
+            collapsed={collapsed}
+          />
           <NavItem href="/arquivo" icon={Archive} label="Arquivo" active={pathname === "/arquivo"} collapsed={collapsed} />
           <NavItem href="/mapa" icon={MapIcon} label="Mapa" active={pathname === "/mapa"} collapsed={collapsed} />
           {isAdmin && (

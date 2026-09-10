@@ -23,28 +23,30 @@ datasource db {
 // EventStatus:    "ABERTO" | "EM_ANALISE" | "GANHO" | "PERDIDO"
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         String   @default("USER") // String — Role
-  allowedStates String  @default("[]") // JSON string array de siglas, ex: ["MG","SP"]
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          String   @default("USER") // String — Role
+  allowedStates String   @default("[]") // JSON string array de siglas, ex: ["MG","SP"]
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  dealsCreated  Deal[]     @relation("DealCreatedBy")
-  dealsAssigned Deal[]     @relation("DealAssignedTo")
-  notes         Note[]
-  reminders     Reminder[] @relation("ReminderAssignedTo")
-  auditLogs     AuditLog[]
-  eventsCreated Event[]    @relation("EventCreatedBy")
+  dealsCreated           Deal[]           @relation("DealCreatedBy")
+  dealsAssigned          Deal[]           @relation("DealAssignedTo")
+  notes                  Note[]
+  reminders              Reminder[]       @relation("ReminderAssignedTo")
+  auditLogs              AuditLog[]
+  eventsCreated          Event[]          @relation("EventCreatedBy")
+  documentFoldersCreated DocumentFolder[] @relation("DocumentFolderCreatedBy")
+  documentFilesUploaded  DocumentFile[]   @relation("DocumentFileUploadedBy")
 
   @@map("users")
 }
 
 model Deal {
-  id           String   @id @default(cuid())
+  id           String  @id @default(cuid())
   title        String
   client       String
   city         String
@@ -99,11 +101,11 @@ model Note {
 }
 
 model Reminder {
-  id           String         @id @default(cuid())
+  id           String   @id @default(cuid())
   dealId       String
-  deal         Deal           @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  deal         Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
   assignedToId String
-  assignedTo   User           @relation("ReminderAssignedTo", fields: [assignedToId], references: [id])
+  assignedTo   User     @relation("ReminderAssignedTo", fields: [assignedToId], references: [id])
   dueDate      DateTime
   description  String
   status       String   @default("PENDING") // String — ReminderStatus
@@ -167,4 +169,48 @@ model Event {
   @@index([startDate])
   @@index([dealId])
   @@map("events")
+}
+
+/// Pasta do Repositório de Documentos (aba "Documentos" do menu lateral) — não tem
+/// relação com Deal/processo, é um repositório livre de arquivos organizados pelo
+/// usuário (editais modelo, manuais, contratos-padrão, etc.). `color` é uma das cores
+/// de DOCUMENT_FOLDER_COLORS (src/types/document.ts), escolhida na criação só para dar
+/// variedade visual ao grid — não tem outro significado.
+model DocumentFolder {
+  id    String @id @default(cuid())
+  name  String
+  color String @default("#3b82f6")
+
+  createdById String
+  createdBy   User   @relation("DocumentFolderCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  files DocumentFile[]
+
+  @@map("document_folders")
+}
+
+/// Arquivo dentro de uma DocumentFolder — mesmo padrão de armazenamento de Attachment
+/// (data URL base64 em `url`, ver actions/attachments.ts): sem depender de um serviço
+/// de blob storage externo, funciona imediatamente em qualquer ambiente com só
+/// DATABASE_URL configurado.
+model DocumentFile {
+  id       String @id @default(cuid())
+  name     String
+  url      String
+  fileType String
+  size     Int // bytes
+
+  folderId String
+  folder   DocumentFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  uploadedById String
+  uploadedBy   User   @relation("DocumentFileUploadedBy", fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([folderId])
+  @@map("document_files")
 }
