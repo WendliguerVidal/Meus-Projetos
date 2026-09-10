@@ -28,7 +28,7 @@ export async function createFolder(input: { name: string }): Promise<ActionResul
     const data = folderNameSchema.parse(input);
 
     const folder = await prisma.documentFolder.create({
-      data: { name: data.name, color: randomFolderColor(), createdById: user.id },
+      data: { name: data.name, color: randomFolderColor(), createdBy: user.name || user.email || "Usuário" },
       include: { _count: { select: { files: true } } },
     });
 
