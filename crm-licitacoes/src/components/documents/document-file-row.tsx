@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { UrgencyBadge } from "@/components/ui/urgency-badge";
 import { formatBytes, formatDateTime, formatDate } from "@/lib/utils";
 import { getDocumentUrgency } from "@/lib/urgency";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import type { DocumentFileItem } from "@/types/document";
 
 function iconForFileType(fileType: string) {
@@ -28,6 +29,7 @@ export function DocumentFileRow({
 }) {
   const Icon = iconForFileType(file.fileType);
   const urgency = getDocumentUrgency(file.expiryDate);
+  const isAdmin = useIsAdmin();
 
   return (
     <div className="flex items-start gap-3 rounded-md border p-3">
@@ -51,9 +53,11 @@ export function DocumentFileRow({
         <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Editar documento">
           <Pencil className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Excluir arquivo">
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+        {isAdmin && (
+          <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Excluir arquivo">
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        )}
       </div>
     </div>
   );

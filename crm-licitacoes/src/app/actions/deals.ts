@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser, assertCanAccessState, stateScopeWhere } from "@/lib/rbac";
+import { requireUser, requireAdmin, assertCanAccessState, stateScopeWhere } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
 import {
   dealSchema,
@@ -224,13 +224,15 @@ export async function moveDeal(input: { id: string; category: DealCategory; stat
   return deal;
 }
 
-/** Exclui um processo e tudo que depende dele. Nunca deixa uma exceção crua subir ao
- * cliente — qualquer falha (inclusive um eventual erro de chave estrangeira, caso o
- * banco esteja com o schema desatualizado) volta como `{ success: false, error }` com
- * mensagem amigável, em vez do erro genérico de render do Next.js. */
+/** Exclui um processo e tudo que depende dele. Restrito a administradores. Nunca deixa
+ * uma exceção crua subir ao cliente — qualquer falha (inclusive um eventual erro de
+ * chave estrangeira, caso o banco esteja com o schema desatualizado) volta como
+ * `{ success: false, error }` com mensagem amigável, em vez do erro genérico de render
+ * do Next.js. */
 export async function deleteDeal(id: string): Promise<ActionResult> {
   try {
     const user = await requireUser();
+    requireAdmin(user);
     const existing = await prisma.deal.findUniqueOrThrow({ where: { id } });
     assertCanAccessState(user, existing.state);
 

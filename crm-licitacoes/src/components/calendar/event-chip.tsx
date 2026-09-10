@@ -10,6 +10,7 @@ import { UrgencyBadge, UrgencyDot } from "@/components/ui/urgency-badge";
 import { useDealUI } from "@/components/deal-details/deal-ui-context";
 import { useDeleteEvent } from "@/hooks/use-events";
 import { useDeleteDeal } from "@/hooks/use-deals";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import type { CalendarItem } from "@/types/event";
 import { formatUrgencyMessage } from "@/lib/urgency";
 import { Building2, Clock, ExternalLink, Loader2, Pencil, Trash2 } from "lucide-react";
@@ -38,6 +39,7 @@ export function EventChip({
   const { openDeal } = useDealUI();
   const { mutate: removeEvent, isPending: deletingEvent } = useDeleteEvent();
   const { mutate: removeDeal, isPending: deletingDeal } = useDeleteDeal();
+  const isAdmin = useIsAdmin();
 
   const isEditable = item.kind === "event";
   const deleting = deletingEvent || deletingDeal;
@@ -113,16 +115,18 @@ export function EventChip({
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleDelete}
-              disabled={deleting}
-              aria-label={item.kind === "event" ? "Excluir evento" : "Excluir processo"}
-            >
-              {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 text-destructive" />}
-            </Button>
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleDelete}
+                disabled={deleting}
+                aria-label={item.kind === "event" ? "Excluir evento" : "Excluir processo"}
+              >
+                {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 text-destructive" />}
+              </Button>
+            )}
           </div>
         </div>
 

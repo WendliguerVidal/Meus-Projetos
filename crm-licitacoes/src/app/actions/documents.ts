@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/rbac";
+import { requireUser, requireAdmin } from "@/lib/rbac";
 import { toFriendlyErrorMessage, type ActionResult } from "@/lib/action-errors";
 import { getDocumentUrgency, worstUrgency } from "@/lib/urgency";
 import {
@@ -140,10 +140,12 @@ export async function renameFolder(id: string, input: { name: string }): Promise
 }
 
 /** Exclui a pasta e, em cascata (onDelete: Cascade no schema — autorrelação de subpasta
- * e relação com DocumentFile), todas as subpastas e arquivos dentro dela. */
+ * e relação com DocumentFile), todas as subpastas e arquivos dentro dela. Restrito a
+ * administradores. */
 export async function deleteFolder(id: string): Promise<ActionResult> {
   try {
-    await requireUser();
+    const user = await requireUser();
+    requireAdmin(user);
     await prisma.documentFolder.delete({ where: { id } });
 
     revalidatePath("/documentos");
@@ -252,9 +254,11 @@ export async function updateFile(
   }
 }
 
+/** Restrito a administradores. */
 export async function deleteFile(id: string): Promise<ActionResult> {
   try {
-    await requireUser();
+    const user = await requireUser();
+    requireAdmin(user);
     await prisma.documentFile.delete({ where: { id } });
 
     revalidatePath("/documentos");

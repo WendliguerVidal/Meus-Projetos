@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useAttachments, useUploadAttachment, useDeleteAttachment } from "@/hooks/use-deal-details";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateTime } from "@/lib/utils";
@@ -12,6 +13,7 @@ export function AttachmentsTab({ dealId }: { dealId: string }) {
   const { mutate: upload, isPending: uploading } = useUploadAttachment(dealId);
   const { mutate: remove } = useDeleteAttachment(dealId);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const isAdmin = useIsAdmin();
 
   const handleFile = (file: File | undefined) => {
     if (!file) return;
@@ -61,9 +63,11 @@ export function AttachmentsTab({ dealId }: { dealId: string }) {
               </a>
               <p className="text-xs text-muted-foreground">{formatDateTime(a.uploadedAt)}</p>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => remove(a.id)}>
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+            {isAdmin && (
+              <Button variant="ghost" size="icon" onClick={() => remove(a.id)}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            )}
           </div>
         ))}
       </div>

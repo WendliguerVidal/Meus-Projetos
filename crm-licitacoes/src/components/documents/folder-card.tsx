@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { UrgencyDot } from "@/components/ui/urgency-badge";
 import { useRenameFolder } from "@/hooks/use-documents";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import type { DocumentFolderSummary } from "@/types/document";
 
 /** Card de pasta do grid do Repositório de Documentos — ícone colorido (com uma bolinha
@@ -39,6 +40,7 @@ export function FolderCard({
   const [name, setName] = React.useState(folder.name);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const { mutate: rename, isPending: renaming } = useRenameFolder(parentId);
+  const isAdmin = useIsAdmin();
 
   React.useEffect(() => {
     if (editing) inputRef.current?.select();
@@ -94,20 +96,22 @@ export function FolderCard({
               <TooltipContent>Renomear</TooltipContent>
             </Tooltip>
           )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
-                onClick={onDeleteRequest}
-                aria-label="Excluir pasta"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Excluir pasta</TooltipContent>
-          </Tooltip>
+          {isAdmin && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={onDeleteRequest}
+                  aria-label="Excluir pasta"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Excluir pasta</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
 

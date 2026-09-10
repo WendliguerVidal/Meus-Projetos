@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser, assertCanAccessState } from "@/lib/rbac";
+import { requireUser, requireAdmin, assertCanAccessState } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
 
 // 3MB — armazenamento como data URL (base64 infla ~33% o payload; plataformas serverless
@@ -46,8 +46,10 @@ export async function uploadAttachment(formData: FormData) {
   return { id: attachment.id, fileName: attachment.fileName, fileType: attachment.fileType, uploadedAt: attachment.uploadedAt };
 }
 
+/** Restrito a administradores. */
 export async function deleteAttachment(id: string) {
   const user = await requireUser();
+  requireAdmin(user);
   const existing = await prisma.attachment.findUniqueOrThrow({ where: { id }, include: { deal: true } });
   assertCanAccessState(user, existing.deal.state);
 

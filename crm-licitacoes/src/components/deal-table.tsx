@@ -14,6 +14,7 @@ import { getDealUrgency } from "@/lib/urgency";
 import { DEAL_CATEGORIES, CATEGORY_COLORS, CATEGORY_LABELS, type DealCategory } from "@/types/deal";
 import { useDealUI } from "@/components/deal-details/deal-ui-context";
 import { useDeleteDeal } from "@/hooks/use-deals";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import type { DealWithRelations } from "@/types";
 import { ChevronsDownUp, ChevronsUpDown, Trash2 } from "lucide-react";
 
@@ -31,6 +32,7 @@ export function DealTable({
   const [openItems, setOpenItems] = React.useState<string[]>(["ANDAMENTO"]);
   const [pendingDelete, setPendingDelete] = React.useState<{ id: string; title: string } | null>(null);
   const { mutate: removeDeal, isPending: deleting } = useDeleteDeal();
+  const isAdmin = useIsAdmin();
 
   // Ao selecionar uma categoria na Sidebar: garante que a seção correspondente esteja
   // expandida (sem recolher as demais) e rola a tela até ela.
@@ -103,7 +105,7 @@ export function DealTable({
                         <TableHead>Status</TableHead>
                         <TableHead>Responsável</TableHead>
                         <TableHead>Prazo</TableHead>
-                        <TableHead className="w-10 text-right">Ações</TableHead>
+                        {isAdmin && <TableHead className="w-10 text-right">Ações</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -137,25 +139,27 @@ export function DealTable({
                                 {deal.deadline && urgency && <UrgencyBadge date={deal.deadline} level={urgency} />}
                               </div>
                             </TableCell>
-                            <TableCell className="text-right">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setPendingDelete({ id: deal.id, title: deal.title });
-                                    }}
-                                    aria-label="Excluir processo"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Excluir Processo</TooltipContent>
-                              </Tooltip>
-                            </TableCell>
+                            {isAdmin && (
+                              <TableCell className="text-right">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPendingDelete({ id: deal.id, title: deal.title });
+                                      }}
+                                      aria-label="Excluir processo"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Excluir Processo</TooltipContent>
+                                </Tooltip>
+                              </TableCell>
+                            )}
                           </TableRow>
                         );
                       })}

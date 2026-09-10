@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser, assertCanAccessState } from "@/lib/rbac";
+import { requireUser, requireAdmin, assertCanAccessState } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
 import { eventSchema, type EventFormValues, EVENT_STATUS_LABELS, EVENT_STATUS_COLORS } from "@/types/event";
 import { CATEGORY_COLORS, CATEGORY_LABELS, NON_ARCHIVED_CATEGORIES, type DealCategory } from "@/types/deal";
@@ -198,9 +198,11 @@ export async function updateEvent(id: string, input: EventFormValues): Promise<A
   }
 }
 
+/** Restrito a administradores. */
 export async function deleteEvent(id: string): Promise<ActionResult> {
   try {
     const user = await requireUser();
+    requireAdmin(user);
     const existing = await prisma.event.findUniqueOrThrow({ where: { id }, include: { deal: true } });
     if (existing.deal) assertCanAccessState(user, existing.deal.state);
 
