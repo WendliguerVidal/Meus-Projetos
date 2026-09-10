@@ -172,14 +172,23 @@ model Event {
 }
 
 /// Pasta do Repositório de Documentos (aba "Documentos" do menu lateral) — não tem
-/// relação com Deal/processo, é um repositório livre de arquivos organizados pelo
-/// usuário (editais modelo, manuais, contratos-padrão, etc.). `color` é uma das cores
-/// de DOCUMENT_FOLDER_COLORS (src/types/document.ts), escolhida na criação só para dar
-/// variedade visual ao grid — não tem outro significado.
+/// relação com Deal/processo (RBAC por UF não se aplica: é um repositório compartilhado
+/// da equipe). Hierarquia de 2 níveis, imposta na camada de aplicação (actions/documents.ts):
+///   - Pasta de Estado: `state` preenchido (sigla UF), `parentId` nulo — raiz do grid em
+///     /documentos, uma por UF (ex: "MG"). Pode ter arquivos direto e/ou subpastas.
+///   - Subpasta: `parentId` aponta para uma pasta de Estado, `state` nulo — organização
+///     livre dentro do estado (ex: "CNDs Municipais", "FGTS"). Não tem subpastas próprias.
+/// `color` é uma das cores de DOCUMENT_FOLDER_COLORS (src/types/document.ts), escolhida
+/// na criação só para dar variedade visual ao grid — não tem outro significado.
 model DocumentFolder {
-  id    String @id @default(cuid())
+  id    String  @id @default(cuid())
   name  String
-  color String @default("#3b82f6")
+  color String  @default("#3b82f6")
+  state String? // sigla UF — só em pastas de Estado (raiz)
+
+  parentId   String?
+  parent     DocumentFolder?  @relation("DocumentFolderSubfolders", fields: [parentId], references: [id], onDelete: Cascade)
+  subfolders DocumentFolder[] @relation("DocumentFolderSubfolders")
 
   createdById String
   createdBy   User   @relation("DocumentFolderCreatedBy", fields: [createdById], references: [id])
@@ -189,19 +198,26 @@ model DocumentFolder {
 
   files DocumentFile[]
 
+  @@index([parentId])
+  @@index([state])
   @@map("document_folders")
 }
 
-/// Arquivo dentro de uma DocumentFolder — mesmo padrão de armazenamento de Attachment
-/// (data URL base64 em `url`, ver actions/attachments.ts): sem depender de um serviço
-/// de blob storage externo, funciona imediatamente em qualquer ambiente com só
-/// DATABASE_URL configurado.
+/// Arquivo dentro de uma DocumentFolder (pasta de Estado ou subpasta) — mesmo padrão de
+/// armazenamento de Attachment (data URL base64 em `url`, ver actions/attachments.ts):
+/// sem depender de um serviço de blob storage externo, funciona imediatamente em
+/// qualquer ambiente com só DATABASE_URL configurado. `expiryDate`/`notes` sustentam o
+/// controle de validade de certidões (CNDs, alvarás, etc.) e seus alertas na Central de
+/// Notificações (ver src/lib/urgency.ts -> getDocumentUrgency).
 model DocumentFile {
   id       String @id @default(cuid())
   name     String
   url      String
   fileType String
   size     Int // bytes
+
+  expiryDate DateTime?
+  notes      String?
 
   folderId String
   folder   DocumentFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
@@ -212,5 +228,6 @@ model DocumentFile {
   createdAt DateTime @default(now())
 
   @@index([folderId])
+  @@index([expiryDate])
   @@map("document_files")
 }

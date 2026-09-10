@@ -3,12 +3,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  listFolders,
-  createFolder,
+  listStateFolders,
+  createStateFolder,
+  createSubfolder,
   renameFolder,
   deleteFolder,
-  listFiles,
+  getFolderDetail,
   uploadFile,
+  updateFile,
   deleteFile,
 } from "@/app/actions/documents";
 
@@ -17,27 +19,46 @@ import {
 // { success: false, error } numa Promise rejeitada para o onSuccess/onError do React
 // Query continuar funcionando sem mudar cada tela que consome esses hooks.
 
-export function useFolders() {
-  return useQuery({ queryKey: ["document-folders"], queryFn: () => listFolders() });
+export function useStateFolders() {
+  return useQuery({ queryKey: ["document-state-folders"], queryFn: () => listStateFolders() });
 }
 
-export function useCreateFolder() {
+export function useCreateStateFolder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (name: string) => {
-      const result = await createFolder({ name });
+    mutationFn: async (state: string) => {
+      const result = await createStateFolder({ state });
       if (!result.success) throw new Error(result.error);
       return result.data;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["document-folders"] });
-      toast.success("Pasta criada.");
+      qc.invalidateQueries({ queryKey: ["document-state-folders"] });
+      toast.success("Pasta do estado criada.");
     },
-    onError: (err: Error) => toast.error(err.message || "Erro ao criar pasta."),
+    onError: (err: Error) => toast.error(err.message || "Erro ao criar pasta do estado."),
   });
 }
 
-export function useRenameFolder() {
+export function useCreateSubfolder(parentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const result = await createSubfolder(parentId, { name });
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["document-folder", parentId] });
+      qc.invalidateQueries({ queryKey: ["document-state-folders"] });
+      toast.success("Subpasta criada.");
+    },
+    onError: (err: Error) => toast.error(err.message || "Erro ao criar subpasta."),
+  });
+}
+
+/** Usado só para subpastas — pastas de Estado não podem ser renomeadas (ver
+ * actions/documents.ts). `parentId` é o Estado-pai, para invalidar seu detalhe também. */
+export function useRenameFolder(parentId?: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
@@ -46,14 +67,15 @@ export function useRenameFolder() {
       return result.data;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["document-folders"] });
+      qc.invalidateQueries({ queryKey: ["document-state-folders"] });
+      if (parentId) qc.invalidateQueries({ queryKey: ["document-folder", parentId] });
       toast.success("Pasta renomeada.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao renomear pasta."),
   });
 }
 
-export function useDeleteFolder() {
+export function useDeleteFolder(parentId?: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
@@ -61,22 +83,26 @@ export function useDeleteFolder() {
       if (!result.success) throw new Error(result.error);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["document-folders"] });
+      qc.invalidateQueries({ queryKey: ["document-state-folders"] });
+      if (parentId) qc.invalidateQueries({ queryKey: ["document-folder", parentId] });
+      // Documentos vencidos/a vencer dentro da pasta excluída não devem continuar
+      // aparecendo na Central de Notificações do cabeçalho.
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
       toast.success("Pasta excluída.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao excluir pasta."),
   });
 }
 
-export function useFiles(folderId: string | null) {
+export function useFolderDetail(folderId: string | null) {
   return useQuery({
-    queryKey: ["document-files", folderId],
-    queryFn: () => listFiles(folderId as string),
+    queryKey: ["document-folder", folderId],
+    queryFn: () => getFolderDetail(folderId as string),
     enabled: !!folderId,
   });
 }
 
-export function useUploadFile(folderId: string) {
+export function useUploadFile(folderId: string, parentId?: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (formData: FormData) => {
@@ -85,16 +111,39 @@ export function useUploadFile(folderId: string) {
       return result.data;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["document-files", folderId] });
-      // Atualiza a contagem de arquivos exibida no card da pasta, no grid.
-      qc.invalidateQueries({ queryKey: ["document-folders"] });
+      qc.invalidateQueries({ queryKey: ["document-folder", folderId] });
+      // Atualiza a contagem/urgência exibida nos cards do grid (raiz e, se esta pasta
+      // for uma subpasta, também o card do Estado-pai).
+      qc.invalidateQueries({ queryKey: ["document-state-folders"] });
+      if (parentId) qc.invalidateQueries({ queryKey: ["document-folder", parentId] });
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
       toast.success("Arquivo enviado.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao enviar arquivo."),
   });
 }
 
-export function useDeleteFile(folderId: string) {
+export function useUpdateFile(folderId: string, parentId?: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; name: string; expiryDate?: string | null; notes?: string }) => {
+      const { id, ...rest } = input;
+      const result = await updateFile(id, rest);
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["document-folder", folderId] });
+      qc.invalidateQueries({ queryKey: ["document-state-folders"] });
+      if (parentId) qc.invalidateQueries({ queryKey: ["document-folder", parentId] });
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
+      toast.success("Documento atualizado.");
+    },
+    onError: (err: Error) => toast.error(err.message || "Erro ao atualizar documento."),
+  });
+}
+
+export function useDeleteFile(folderId: string, parentId?: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
@@ -102,8 +151,10 @@ export function useDeleteFile(folderId: string) {
       if (!result.success) throw new Error(result.error);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["document-files", folderId] });
-      qc.invalidateQueries({ queryKey: ["document-folders"] });
+      qc.invalidateQueries({ queryKey: ["document-folder", folderId] });
+      qc.invalidateQueries({ queryKey: ["document-state-folders"] });
+      if (parentId) qc.invalidateQueries({ queryKey: ["document-folder", parentId] });
+      qc.invalidateQueries({ queryKey: ["urgent-items"] });
       toast.success("Arquivo excluído.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao excluir arquivo."),

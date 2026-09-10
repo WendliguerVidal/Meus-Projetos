@@ -11,7 +11,13 @@ import type { EventStatus } from "@/types/event";
 
 export type UrgencyLevel = "OVERDUE" | "SOON" | "OK";
 
-const SOON_WINDOW_MS = 3 * 24 * 60 * 60 * 1000; // 3 dias
+const SOON_WINDOW_MS = 3 * 24 * 60 * 60 * 1000; // 3 dias — Deal/Event
+
+/** Documentos (certidões, CNDs, alvarás...) pedem uma antecedência maior que o prazo de
+ * 3 dias de Deal/Event — renovar uma certidão leva tempo, por isso o aviso amarelo
+ * começa bem antes do vencimento. */
+export const DOCUMENT_EXPIRY_SOON_DAYS = 30;
+const DOCUMENT_SOON_WINDOW_MS = DOCUMENT_EXPIRY_SOON_DAYS * 24 * 60 * 60 * 1000;
 
 /** Categorias de processo já encerradas — um prazo vencido não é "urgente" quando o
  * processo já foi ganho, perdido, concluído ou arquivado (mesma lista usada há tempos
@@ -23,17 +29,31 @@ export const CLOSED_EVENT_STATUSES: EventStatus[] = ["GANHO", "PERDIDO"];
 
 /**
  * 🔴 OVERDUE — data já passou ou vence agora (<= momento atual).
- * 🟡 SOON — vence dentro dos próximos 3 dias.
- * 🟢 OK — mais de 3 dias de margem.
+ * 🟡 SOON — vence dentro da janela de "atenção" (`soonWindowMs`, 3 dias por padrão —
+ *   Deal/Event; documentos usam uma janela maior, ver getDocumentUrgency).
+ * 🟢 OK — fora da janela de atenção.
  * `null` quando não há data (nada a destacar).
  */
-export function getUrgencyLevel(date: Date | string | null | undefined): UrgencyLevel | null {
+export function getUrgencyLevel(
+  date: Date | string | null | undefined,
+  soonWindowMs: number = SOON_WINDOW_MS
+): UrgencyLevel | null {
   if (!date) return null;
   const d = typeof date === "string" ? new Date(date) : date;
   const diffMs = d.getTime() - Date.now();
   if (diffMs <= 0) return "OVERDUE";
-  if (diffMs <= SOON_WINDOW_MS) return "SOON";
+  if (diffMs <= soonWindowMs) return "SOON";
   return "OK";
+}
+
+/** Pior nível entre vários — usado para o "resumo" de uma pasta a partir da urgência dos
+ * arquivos dentro dela (e de suas subpastas): um único arquivo vencido já deixa a pasta
+ * inteira vermelha. */
+export function worstUrgency(levels: (UrgencyLevel | null | undefined)[]): UrgencyLevel | null {
+  if (levels.includes("OVERDUE")) return "OVERDUE";
+  if (levels.includes("SOON")) return "SOON";
+  if (levels.includes("OK")) return "OK";
+  return null;
 }
 
 /** Urgência do prazo de um processo — `null` também quando a categoria já está encerrada. */
@@ -52,6 +72,14 @@ export function getEventUrgency(
 ): UrgencyLevel | null {
   if (CLOSED_EVENT_STATUSES.includes(status as EventStatus)) return null;
   return getUrgencyLevel(startDate);
+}
+
+/** Urgência de validade de um documento (certidão, CND, alvará...) — janela de atenção
+ * bem maior que Deal/Event (30 dias por padrão, ver DOCUMENT_EXPIRY_SOON_DAYS), já que
+ * renovar uma certidão não é instantâneo. `null` quando o documento não tem validade
+ * definida (nem todo documento vence). */
+export function getDocumentUrgency(expiryDate: Date | string | null | undefined): UrgencyLevel | null {
+  return getUrgencyLevel(expiryDate, DOCUMENT_SOON_WINDOW_MS);
 }
 
 export const URGENCY_DOT_COLOR: Record<UrgencyLevel, string> = {

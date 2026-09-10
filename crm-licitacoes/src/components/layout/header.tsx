@@ -36,10 +36,15 @@ export function Header({ search, onSearchChange }: { search: string; onSearchCha
   const [importOpen, setImportOpen] = React.useState(false);
   const [notificationsOpen, setNotificationsOpen] = React.useState(false);
 
-  const goToUrgentItem = (dealId: string | null) => {
+  const goToUrgentItem = (item: { kind: "deal" | "event" | "document"; dealId: string | null; href: string | null }) => {
     setNotificationsOpen(false);
-    if (dealId) {
-      openDeal(dealId);
+    if (item.kind === "document") {
+      // Documento (certidão, CND, alvará...) — leva direto à pasta que contém o arquivo.
+      if (item.href) router.push(item.href);
+      return;
+    }
+    if (item.dealId) {
+      openDeal(item.dealId);
     } else {
       // Evento avulso (sem processo vinculado) — só existe no Calendário.
       router.push("/calendario");
@@ -103,7 +108,7 @@ export function Header({ search, onSearchChange }: { search: string; onSearchCha
                 (urgentItems ?? []).map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => goToUrgentItem(item.dealId)}
+                    onClick={() => goToUrgentItem(item)}
                     className="flex w-full flex-col gap-1 border-b px-4 py-2.5 text-left text-sm last:border-b-0 hover:bg-accent"
                   >
                     <span className="line-clamp-1 font-medium">{item.title}</span>

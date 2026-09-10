@@ -7,26 +7,38 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { UrgencyDot } from "@/components/ui/urgency-badge";
 import { useRenameFolder } from "@/hooks/use-documents";
-import type { DocumentFolderWithCount } from "@/types/document";
+import type { DocumentFolderSummary } from "@/types/document";
 
-/** Card de pasta do grid do Repositório de Documentos — ícone colorido, nome (editável
- * inline via o lápis), contagem de arquivos, e um botão de excluir. Clicar no corpo do
- * card (fora dos botões de ação) abre a pasta; o lápis troca o nome por um campo de
- * texto ("edição rápida") em vez de abrir um modal à parte. */
+/** Card de pasta do grid do Repositório de Documentos — ícone colorido (com uma bolinha
+ * de urgência sobreposta quando há documento vencido/a vencer dentro dela), nome
+ * (editável inline via o lápis, quando `showRename`), contagem de arquivos, e um botão
+ * de excluir. Clicar no corpo do card (fora dos botões de ação) abre a pasta. */
 export function FolderCard({
   folder,
+  subtitle,
+  showRename = true,
+  parentId,
   onOpen,
   onDeleteRequest,
 }: {
-  folder: DocumentFolderWithCount;
+  folder: DocumentFolderSummary;
+  /** Rótulo extra abaixo do nome — usado para o nome completo do Estado no grid raiz. */
+  subtitle?: string;
+  /** Pastas de Estado não podem ser renomeadas (o nome vem da sigla UF) — o pai esconde
+   * o lápis passando `false` aqui. */
+  showRename?: boolean;
+  /** Pasta de Estado que contém esta subpasta — só para invalidar o cache certo depois
+   * de renomear. `undefined`/`null` para uma pasta de Estado (não tem pai). */
+  parentId?: string | null;
   onOpen: () => void;
   onDeleteRequest: () => void;
 }) {
   const [editing, setEditing] = React.useState(false);
   const [name, setName] = React.useState(folder.name);
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const { mutate: rename, isPending: renaming } = useRenameFolder();
+  const { mutate: rename, isPending: renaming } = useRenameFolder(parentId);
 
   React.useEffect(() => {
     if (editing) inputRef.current?.select();
@@ -55,28 +67,33 @@ export function FolderCard({
           type="button"
           onClick={onOpen}
           disabled={editing}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg disabled:cursor-default"
+          className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-lg disabled:cursor-default"
           style={{ backgroundColor: `${folder.color}1a`, color: folder.color }}
           aria-label={`Abrir pasta ${folder.name}`}
         >
           <Folder className="h-6 w-6" fill={folder.color} strokeWidth={1.5} />
+          {folder.urgencyLevel && (
+            <UrgencyDot level={folder.urgencyLevel} className="absolute -right-0.5 -top-0.5" />
+          )}
         </button>
 
         <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setEditing(true)}
-                aria-label="Renomear pasta"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Renomear</TooltipContent>
-          </Tooltip>
+          {showRename && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setEditing(true)}
+                  aria-label="Renomear pasta"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Renomear</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -118,10 +135,11 @@ export function FolderCard({
         ) : (
           <button type="button" onClick={onOpen} className="block w-full text-left">
             <p className="truncate text-sm font-medium">{folder.name}</p>
+            {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
           </button>
         )}
         <Badge variant="secondary" className="mt-1.5 font-normal">
-          {folder._count.files} {folder._count.files === 1 ? "arquivo" : "arquivos"}
+          {folder.fileCount} {folder.fileCount === 1 ? "arquivo" : "arquivos"}
         </Badge>
       </div>
     </Card>
