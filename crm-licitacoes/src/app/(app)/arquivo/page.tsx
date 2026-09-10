@@ -7,14 +7,20 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useDealUI } from "@/components/deal-details/deal-ui-context";
+import { useDeleteDeal } from "@/hooks/use-deals";
 import { monthLabel } from "@/lib/utils";
-import { Archive } from "lucide-react";
+import { Archive, Trash2 } from "lucide-react";
 
 export default function ArquivoPage() {
   const { data: allDeals, isLoading } = useDeals({ category: "ARQUIVADO" });
   const { search } = useSearch();
   const { openDeal } = useDealUI();
+  const [pendingDelete, setPendingDelete] = React.useState<{ id: string; title: string } | null>(null);
+  const { mutate: removeDeal, isPending: deleting } = useDeleteDeal();
 
   const deals = React.useMemo(() => {
     if (!search.trim()) return allDeals ?? [];
@@ -78,6 +84,7 @@ export default function ArquivoPage() {
                         <TableHead>Cliente</TableHead>
                         <TableHead>Cidade/UF</TableHead>
                         <TableHead>Status Original</TableHead>
+                        <TableHead className="w-10 text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -91,6 +98,25 @@ export default function ArquivoPage() {
                           <TableCell>
                             <Badge variant="outline">{deal.status}</Badge>
                           </TableCell>
+                          <TableCell className="text-right">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPendingDelete({ id: deal.id, title: deal.title });
+                                  }}
+                                  aria-label="Excluir processo"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Excluir Processo</TooltipContent>
+                            </Tooltip>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -101,6 +127,23 @@ export default function ArquivoPage() {
           </Accordion>
         </div>
       ))}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Excluir processo"
+        description={
+          pendingDelete
+            ? `Tem certeza que deseja excluir o processo "${pendingDelete.title}"? Esta ação não pode ser desfeita e remove notas, lembretes, anexos e histórico vinculados a ele.`
+            : ""
+        }
+        confirmLabel="Excluir"
+        loading={deleting}
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          removeDeal(pendingDelete.id, { onSuccess: () => setPendingDelete(null) });
+        }}
+      />
     </div>
   );
 }

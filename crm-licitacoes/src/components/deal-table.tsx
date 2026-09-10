@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { UrgencyBadge } from "@/components/ui/urgency-badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cn, formatDate, initials } from "@/lib/utils";
 import { getDealUrgency } from "@/lib/urgency";
 import { DEAL_CATEGORIES, CATEGORY_COLORS, CATEGORY_LABELS, type DealCategory } from "@/types/deal";
 import { useDealUI } from "@/components/deal-details/deal-ui-context";
+import { useDeleteDeal } from "@/hooks/use-deals";
 import type { DealWithRelations } from "@/types";
-import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, Trash2 } from "lucide-react";
 
 const VISIBLE_CATEGORIES: DealCategory[] = DEAL_CATEGORIES.filter((c) => c !== "ARQUIVADO");
 
@@ -26,6 +29,8 @@ export function DealTable({
 }) {
   const { openDeal } = useDealUI();
   const [openItems, setOpenItems] = React.useState<string[]>(["ANDAMENTO"]);
+  const [pendingDelete, setPendingDelete] = React.useState<{ id: string; title: string } | null>(null);
+  const { mutate: removeDeal, isPending: deleting } = useDeleteDeal();
 
   // Ao selecionar uma categoria na Sidebar: garante que a seção correspondente esteja
   // expandida (sem recolher as demais) e rola a tela até ela.
@@ -98,6 +103,7 @@ export function DealTable({
                         <TableHead>Status</TableHead>
                         <TableHead>Responsável</TableHead>
                         <TableHead>Prazo</TableHead>
+                        <TableHead className="w-10 text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -131,6 +137,25 @@ export function DealTable({
                                 {deal.deadline && urgency && <UrgencyBadge date={deal.deadline} level={urgency} />}
                               </div>
                             </TableCell>
+                            <TableCell className="text-right">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPendingDelete({ id: deal.id, title: deal.title });
+                                    }}
+                                    aria-label="Excluir processo"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Excluir Processo</TooltipContent>
+                              </Tooltip>
+                            </TableCell>
                           </TableRow>
                         );
                       })}
@@ -142,6 +167,23 @@ export function DealTable({
           );
         })}
       </Accordion>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Excluir processo"
+        description={
+          pendingDelete
+            ? `Tem certeza que deseja excluir o processo "${pendingDelete.title}"? Esta ação não pode ser desfeita e remove notas, lembretes, anexos e histórico vinculados a ele.`
+            : ""
+        }
+        confirmLabel="Excluir"
+        loading={deleting}
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          removeDeal(pendingDelete.id, { onSuccess: () => setPendingDelete(null) });
+        }}
+      />
     </div>
   );
 }

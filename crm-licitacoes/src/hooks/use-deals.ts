@@ -104,7 +104,12 @@ export function useMoveDeal() {
 export function useDeleteDeal() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => deleteDeal(id),
+    // deleteDeal nunca lança — retorna { success, ... }; convertemos de volta numa
+    // Promise rejeitada para o fluxo onSuccess/onError do React Query continuar igual.
+    mutationFn: async (id: string) => {
+      const result = await deleteDeal(id);
+      if (!result.success) throw new Error(result.error);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["deals"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });

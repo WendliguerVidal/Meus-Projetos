@@ -14,6 +14,7 @@ import {
 } from "@/types/deal";
 import type { Prisma } from "@prisma/client";
 import type { DealWithRelations } from "@/types";
+import { toFriendlyErrorMessage, type ActionResult } from "@/lib/action-errors";
 
 export type DealFilters = {
   category?: DealCategory;
@@ -223,15 +224,33 @@ export async function moveDeal(input: { id: string; category: DealCategory; stat
   return deal;
 }
 
-export async function deleteDeal(id: string) {
-  const user = await requireUser();
-  const existing = await prisma.deal.findUniqueOrThrow({ where: { id } });
-  assertCanAccessState(user, existing.state);
+/** Exclui um processo e tudo que depende dele. Nunca deixa uma exceção crua subir ao
+ * cliente — qualquer falha (inclusive um eventual erro de chave estrangeira, caso o
+ * banco esteja com o schema desatualizado) volta como `{ success: false, error }` com
+ * mensagem amigável, em vez do erro genérico de render do Next.js. */
+export async function deleteDeal(id: string): Promise<ActionResult> {
+  try {
+    const user = await requireUser();
+    const existing = await prisma.deal.findUniqueOrThrow({ where: { id } });
+    assertCanAccessState(user, existing.state);
 
-  await logAudit({ dealId: id, userId: user.id, action: `Excluiu o processo "${existing.title}"` });
-  await prisma.deal.delete({ where: { id } });
+    await logAudit({ dealId: id, userId: user.id, action: `Excluiu o processo "${existing.title}"` });
 
-  revalidatePath("/");
+    // Desvincula (não exclui) os Events do calendário ligados a este processo antes de
+    // apagar o Deal — o schema já declara `onDelete: SetNull` nessa relação, mas fazer
+    // isso explicitamente aqui evita erro de chave estrangeira caso o banco de produção
+    // esteja com o schema desatualizado (já aconteceu antes neste projeto). Notes,
+    // Reminders, Attachments e AuditLogs têm `onDelete: Cascade` e são removidos
+    // automaticamente junto com o Deal.
+    await prisma.event.updateMany({ where: { dealId: id }, data: { dealId: null } });
+    await prisma.deal.delete({ where: { id } });
+
+    revalidatePath("/");
+    return { success: true, data: null };
+  } catch (err) {
+    console.error("[deals] deleteDeal falhou:", err);
+    return { success: false, error: toFriendlyErrorMessage(err) };
+  }
 }
 
 export async function getDashboardStats(filters?: DealFilters) {
