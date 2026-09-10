@@ -199,7 +199,7 @@ model DocumentFolder {
 model DocumentFile {
   id       String @id @default(cuid())
   name     String
-  url      String
+  url      String @db.Text
   fileType String
   size     Int // bytes
 
