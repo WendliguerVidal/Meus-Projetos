@@ -41,7 +41,7 @@ export async function listTodayReminders() {
 export async function createReminder(input: {
   dealId: string;
   assignedToId: string;
-  dueDate: Date;
+  dueDate: string | Date;
   description: string;
 }) {
   const user = await requireUser();
