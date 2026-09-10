@@ -49,6 +49,7 @@ model Deal {
   client  String
   city    String
   state   String // sigla UF, ex: "MG"
+  items       DealItem[]
 
   // Descontinuados (2026): o objeto/equipamento de um processo agora é representado por
   // uma lista de DealItem (múltiplos objetos/lotes/quantidades por processo) em vez de um
@@ -98,18 +99,14 @@ model Deal {
 /// Gerais" do formulário. Persistidos junto com o restante do formulário (sem Server Action
 /// própria por item) — ver updateDeal/createDeal em actions/deals.ts.
 model DealItem {
-  id     String @id @default(cuid())
-  dealId String
-  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
-
-  object   String // Objeto/Equipamento, ex: "Retroescavadeira"
-  model    String? // ex: "BHL75C"
-  lot      String? // ex: "Lote 01"
+  id       String  @id @default(cuid())
+  object   String
+  model    String?
+  lot      String?
   quantity Int     @default(1)
+  dealId   String
+  deal     Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-
-  @@index([dealId])
   @@map("deal_items")
 }
 
