@@ -46,16 +46,13 @@ export function RemindersTab({ dealId }: { dealId: string }) {
   } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: { assignedToId: "", dueDate: "", description: "" } });
 
   const onSubmit = (data: FormValues) => {
-    create(
-      { dealId, assignedToId: data.assignedToId, dueDate: new Date(data.dueDate), description: data.description },
-      {
-        onSuccess: () => {
-          reset();
-          setShowForm(false);
-        },
-      }
-    );
-  };
+  create({
+    dealId,
+    assignedToId: data.assignedToId,
+    dueDate: new Date(data.dueDate).toISOString(), // Garante que envia como string ISO pura
+    description: data.description,
+  });
+};
 
   const pending = reminders?.filter((r) => r.status === "PENDING") ?? [];
   const done = reminders?.filter((r) => r.status === "DONE") ?? [];
