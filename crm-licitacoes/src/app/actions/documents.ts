@@ -109,7 +109,7 @@ export async function uploadFile(formData: FormData): Promise<ActionResult<Docum
         url,
         fileType,
         size: file.size,
-        uploadedById: user.id,
+        uploadedBy: user.name || user.email || "Usuário",
       },
     });
 
