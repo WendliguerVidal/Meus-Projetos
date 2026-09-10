@@ -46,7 +46,7 @@ export function RemindersTab({ dealId }: { dealId: string }) {
   } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: { assignedToId: "", dueDate: "", description: "" } });
 
  const onSubmit = (data: FormValues) => {
-  // Conversão segura e limpa compatível com o TypeScript
+  // Conversão de data compatível com o formulário
   const dueDateValue = typeof data.dueDate === "string" 
     ? data.dueDate 
     : new Date(data.dueDate).toISOString();
