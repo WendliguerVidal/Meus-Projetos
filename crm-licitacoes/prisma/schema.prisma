@@ -49,7 +49,7 @@ model Deal {
   client  String
   city    String
   state   String // sigla UF, ex: "MG"
-  items       DealItem[]
+  
 
   // Descontinuados (2026): o objeto/equipamento de um processo agora é representado por
   // uma lista de DealItem (múltiplos objetos/lotes/quantidades por processo) em vez de um
