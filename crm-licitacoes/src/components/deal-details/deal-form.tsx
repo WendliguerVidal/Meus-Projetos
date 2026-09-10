@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   dealSchema,
@@ -26,16 +26,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 
 const emptyDefaults: DealFormValues = {
   title: "",
   client: "",
   city: "",
   state: "MG",
-  equipment: "",
-  model: "",
-  serialNumber: "",
+  items: [],
   category: "ANDAMENTO",
   status: defaultStatusFor("ANDAMENTO"),
   lossReason: null,
@@ -71,6 +69,7 @@ export function DealForm({
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     setValue,
@@ -78,6 +77,11 @@ export function DealForm({
   } = useForm<DealFormValues>({
     resolver: zodResolver(dealSchema),
     defaultValues: mergedDefaults,
+  });
+
+  const { fields: itemFields, append: appendItem, remove: removeItem } = useFieldArray({
+    control,
+    name: "items",
   });
 
   const category = watch("category");
@@ -156,21 +160,6 @@ export function DealForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="equipment">Equipamento</Label>
-          <Input id="equipment" placeholder="Ex: Autoclave" {...register("equipment")} />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="model">Modelo</Label>
-          <Input id="model" placeholder="Ex: AC-500" {...register("model")} />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="serialNumber">Número de Série</Label>
-          <Input id="serialNumber" placeholder="Ex: SN-2024-001" {...register("serialNumber")} />
-        </div>
-
-        <div className="space-y-1.5">
           <Label htmlFor="deadline">Prazo</Label>
           <Input id="deadline" type="date" {...register("deadline")} />
         </div>
@@ -235,6 +224,99 @@ export function DealForm({
               {errors.lossDetail && <p className="text-xs text-destructive">{errors.lossDetail.message}</p>}
             </div>
           </>
+        )}
+      </div>
+
+      <div className="space-y-3 rounded-lg border p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <Label className="text-sm font-semibold">Itens do Processo</Label>
+            <p className="text-xs text-muted-foreground">
+              Objeto/equipamento, modelo, lote e quantidade — adicione quantos itens forem necessários.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-1.5"
+            onClick={() => appendItem({ object: "", model: "", lot: "", quantity: 1 })}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Adicionar Item
+          </Button>
+        </div>
+
+        {itemFields.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhum item adicionado.</p>
+        ) : (
+          <div className="space-y-3">
+            {itemFields.map((field, index) => (
+              <div
+                key={field.id}
+                className="grid grid-cols-1 gap-2 rounded-md border p-3 sm:grid-cols-[2fr_1.5fr_1fr_0.8fr_auto] sm:items-end"
+              >
+                <div className="space-y-1">
+                  <Label htmlFor={`items.${index}.object`} className="text-xs">
+                    Objeto / Equipamento *
+                  </Label>
+                  <Input
+                    id={`items.${index}.object`}
+                    placeholder="Ex: Retroescavadeira"
+                    {...register(`items.${index}.object` as const)}
+                  />
+                  {errors.items?.[index]?.object && (
+                    <p className="text-xs text-destructive">{errors.items[index]?.object?.message}</p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`items.${index}.model`} className="text-xs">
+                    Modelo
+                  </Label>
+                  <Input
+                    id={`items.${index}.model`}
+                    placeholder="Ex: BHL75C"
+                    {...register(`items.${index}.model` as const)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`items.${index}.lot`} className="text-xs">
+                    Lote
+                  </Label>
+                  <Input
+                    id={`items.${index}.lot`}
+                    placeholder="Ex: Lote 01"
+                    {...register(`items.${index}.lot` as const)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`items.${index}.quantity`} className="text-xs">
+                    Qtd. *
+                  </Label>
+                  <Input
+                    id={`items.${index}.quantity`}
+                    type="number"
+                    min={1}
+                    step={1}
+                    {...register(`items.${index}.quantity` as const)}
+                  />
+                  {errors.items?.[index]?.quantity && (
+                    <p className="text-xs text-destructive">{errors.items[index]?.quantity?.message}</p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => removeItem(index)}
+                  aria-label="Remover item"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

@@ -44,11 +44,17 @@ model User {
 }
 
 model Deal {
-  id           String  @id @default(cuid())
-  title        String
-  client       String
-  city         String
-  state        String // sigla UF, ex: "MG"
+  id      String @id @default(cuid())
+  title   String
+  client  String
+  city    String
+  state   String // sigla UF, ex: "MG"
+
+  // Descontinuados (2026): o objeto/equipamento de um processo agora é representado por
+  // uma lista de DealItem (múltiplos objetos/lotes/quantidades por processo) em vez de um
+  // único equipamento/modelo. Os três campos abaixo não são mais lidos nem gravados pelo
+  // formulário — seguem no schema apenas como `String?` opcionais para não perder dados
+  // de processos antigos já cadastrados (nenhuma migração destrutiva foi feita).
   equipment    String?
   model        String?
   serialNumber String?
@@ -77,12 +83,34 @@ model Deal {
   attachments Attachment[]
   auditLogs   AuditLog[]
   events      Event[]
+  items       DealItem[]
 
   @@index([category])
   @@index([state])
   @@index([city])
   @@index([assignedToId])
   @@map("deals")
+}
+
+/// Item de objeto/lote de um processo (Deal) — substitui os antigos campos únicos
+/// `equipment`/`model` do Deal: cada processo pode ter múltiplos itens (objeto/equipamento,
+/// modelo, lote e quantidade), adicionados e removidos dinamicamente na aba "Informações
+/// Gerais" do formulário. Persistidos junto com o restante do formulário (sem Server Action
+/// própria por item) — ver updateDeal/createDeal em actions/deals.ts.
+model DealItem {
+  id     String @id @default(cuid())
+  dealId String
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  object   String // Objeto/Equipamento, ex: "Retroescavadeira"
+  model    String? // ex: "BHL75C"
+  lot      String? // ex: "Lote 01"
+  quantity Int     @default(1)
+
+  createdAt DateTime @default(now())
+
+  @@index([dealId])
+  @@map("deal_items")
 }
 
 model Note {

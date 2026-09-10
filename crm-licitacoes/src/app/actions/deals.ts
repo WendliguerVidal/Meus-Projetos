@@ -47,8 +47,11 @@ function buildWhere(filters: DealFilters | undefined, scopedStates: string[] | "
       { title: { contains: filters.search } },
       { client: { contains: filters.search } },
       { city: { contains: filters.search } },
+      // equipment/serialNumber são campos descontinuados (não editáveis mais pelo
+      // formulário) — mantidos aqui só para não perder a busca sobre dados antigos.
       { equipment: { contains: filters.search } },
       { serialNumber: { contains: filters.search } },
+      { items: { some: { object: { contains: filters.search } } } },
     ];
   }
   return where;
@@ -66,6 +69,7 @@ export async function listDeals(filters?: DealFilters) {
     include: {
       createdBy: true,
       assignedTo: true,
+      items: { orderBy: { createdAt: "asc" } },
       _count: { select: { notes: true, reminders: true, attachments: true } },
     },
     orderBy: { updatedAt: "desc" },
@@ -77,7 +81,7 @@ export async function getDeal(id: string) {
   const user = await requireUser();
   const deal = await prisma.deal.findUniqueOrThrow({
     where: { id },
-    include: { createdBy: true, assignedTo: true },
+    include: { createdBy: true, assignedTo: true, items: { orderBy: { createdAt: "asc" } } },
   });
   assertCanAccessState(user, deal.state);
   return deal as unknown as DealWithRelations;
@@ -94,9 +98,6 @@ export async function createDeal(input: DealFormValues) {
       client: data.client,
       city: data.city,
       state: data.state,
-      equipment: data.equipment || null,
-      model: data.model || null,
-      serialNumber: data.serialNumber || null,
       category: data.category,
       status: data.status,
       lossReason: data.category === "PERDIDO" ? data.lossReason : null,
@@ -104,6 +105,14 @@ export async function createDeal(input: DealFormValues) {
       deadline: data.deadline ?? null,
       createdById: user.id,
       assignedToId: data.assignedToId || null,
+      items: {
+        create: data.items.map((item) => ({
+          object: item.object,
+          model: item.model || null,
+          lot: item.lot || null,
+          quantity: item.quantity,
+        })),
+      },
     },
   });
 
@@ -129,25 +138,44 @@ export async function updateDeal(id: string, input: DealFormValues) {
   const archived = data.category === "ARQUIVADO";
   const now = new Date();
 
-  const deal = await prisma.deal.update({
-    where: { id },
-    data: {
-      title: data.title,
-      client: data.client,
-      city: data.city,
-      state: data.state,
-      equipment: data.equipment || null,
-      model: data.model || null,
-      serialNumber: data.serialNumber || null,
-      category: data.category,
-      status: data.status,
-      lossReason: data.category === "PERDIDO" ? data.lossReason : null,
-      lossDetail: data.category === "PERDIDO" ? data.lossDetail : null,
-      deadline: data.deadline ?? null,
-      assignedToId: data.assignedToId || null,
-      archivedYear: archived ? existing.archivedYear ?? now.getFullYear() : null,
-      archivedMonth: archived ? existing.archivedMonth ?? now.getMonth() + 1 : null,
-    },
+  // Itens (objeto/lote/quantidade) não têm Server Action própria — são editados como um
+  // array local no formulário (adicionar/remover "antes de salvar") e persistidos junto
+  // com o resto do processo aqui. Sincroniza via apagar-e-recriar dentro de uma
+  // transação: mais simples que diffar item a item, e seguro porque DealItem não tem
+  // relações próprias dependentes (só o `onDelete: Cascade` a partir de Deal).
+  const deal = await prisma.$transaction(async (tx) => {
+    const updated = await tx.deal.update({
+      where: { id },
+      data: {
+        title: data.title,
+        client: data.client,
+        city: data.city,
+        state: data.state,
+        category: data.category,
+        status: data.status,
+        lossReason: data.category === "PERDIDO" ? data.lossReason : null,
+        lossDetail: data.category === "PERDIDO" ? data.lossDetail : null,
+        deadline: data.deadline ?? null,
+        assignedToId: data.assignedToId || null,
+        archivedYear: archived ? existing.archivedYear ?? now.getFullYear() : null,
+        archivedMonth: archived ? existing.archivedMonth ?? now.getMonth() + 1 : null,
+      },
+    });
+
+    await tx.dealItem.deleteMany({ where: { dealId: id } });
+    if (data.items.length > 0) {
+      await tx.dealItem.createMany({
+        data: data.items.map((item) => ({
+          dealId: id,
+          object: item.object,
+          model: item.model || null,
+          lot: item.lot || null,
+          quantity: item.quantity,
+        })),
+      });
+    }
+
+    return updated;
   });
 
   const changes: string[] = [];

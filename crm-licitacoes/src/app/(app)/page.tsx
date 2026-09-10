@@ -56,8 +56,7 @@ export default function HomePage() {
         d.title.toLowerCase().includes(term) ||
         d.client.toLowerCase().includes(term) ||
         d.city.toLowerCase().includes(term) ||
-        (d.serialNumber ?? "").toLowerCase().includes(term) ||
-        (d.equipment ?? "").toLowerCase().includes(term)
+        (d.items ?? []).some((item) => item.object.toLowerCase().includes(term))
     );
   }, [deals, search]);
 

@@ -3,6 +3,19 @@ import type { DealWithRelations } from "@/types";
 import { CATEGORY_LABELS, LOSS_REASON_LABELS } from "@/types/deal";
 import { formatDate } from "./utils";
 
+/** Resume os itens (objeto/lote/quantidade) de um processo em uma única célula de texto,
+ * ex: "Retroescavadeira BHL75C (Lote 01) x1; Motoniveladora (Lote 02) x2". */
+function summarizeItems(items: DealWithRelations["items"]): string {
+  if (!items || items.length === 0) return "";
+  return items
+    .map((item) => {
+      const parts = [item.object, item.model].filter(Boolean).join(" ");
+      const lot = item.lot ? ` (${item.lot})` : "";
+      return `${parts}${lot} x${item.quantity}`;
+    })
+    .join("; ");
+}
+
 /** Gera e baixa uma planilha .xlsx a partir de uma lista de processos/licitações. */
 export function exportDealsToExcel(deals: DealWithRelations[], fileName = "processos") {
   const rows = deals.map((d) => ({
@@ -10,9 +23,7 @@ export function exportDealsToExcel(deals: DealWithRelations[], fileName = "proce
     Cliente: d.client,
     Cidade: d.city,
     UF: d.state,
-    Equipamento: d.equipment ?? "",
-    Modelo: d.model ?? "",
-    "Número de Série": d.serialNumber ?? "",
+    Itens: summarizeItems(d.items),
     Categoria: CATEGORY_LABELS[d.category as keyof typeof CATEGORY_LABELS] ?? d.category,
     Status: d.status,
     "Motivo da Perda": d.lossReason

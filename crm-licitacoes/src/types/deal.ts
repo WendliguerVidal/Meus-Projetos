@@ -99,14 +99,31 @@ export type ReminderStatus = (typeof REMINDER_STATUSES)[number];
 // Zod Schemas
 // ---------------------------------------------------------------------------
 
+/** Um item (objeto/lote) da lista dinâmica de itens de um processo — ver DealItem no
+ * schema Prisma. `id` só vem preenchido ao editar um item já salvo; itens novos (ainda
+ * não persistidos) trafegam sem `id`. */
+export const dealItemSchema = z.object({
+  id: z.string().optional(),
+  object: z.string().min(1, "Informe o objeto/equipamento").max(200),
+  model: z.string().max(200).optional().or(z.literal("")),
+  lot: z.string().max(120).optional().or(z.literal("")),
+  quantity: z.coerce
+    .number({ invalid_type_error: "Quantidade inválida" })
+    .int("Quantidade deve ser um número inteiro")
+    .positive("Quantidade deve ser maior que zero")
+    .default(1),
+});
+
+export type DealItemFormValues = z.infer<typeof dealItemSchema>;
+
 export const dealSchema = z.object({
   title: z.string().min(3, "Título deve ter ao menos 3 caracteres").max(200),
   client: z.string().min(2, "Cliente é obrigatório").max(200),
   city: z.string().min(2, "Cidade é obrigatória").max(120),
   state: z.enum(BRAZIL_STATES, { errorMap: () => ({ message: "UF inválida" }) }),
-  equipment: z.string().max(200).optional().or(z.literal("")),
-  model: z.string().max(200).optional().or(z.literal("")),
-  serialNumber: z.string().max(200).optional().or(z.literal("")),
+  /** Lista dinâmica de objetos/lotes do processo (ver DealItem). Substitui os antigos
+   * campos únicos `equipment`/`model`/`serialNumber` — removidos deste formulário. */
+  items: z.array(dealItemSchema).default([]),
   category: z.enum(DEAL_CATEGORIES),
   status: z.string().min(1, "Status é obrigatório"),
   lossReason: z.enum(LOSS_REASONS).optional().nullable(),

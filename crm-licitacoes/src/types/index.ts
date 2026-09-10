@@ -1,4 +1,4 @@
-import type { Attachment, AuditLog, Deal, Event, Note, Reminder } from "@prisma/client";
+import type { Attachment, AuditLog, Deal, DealItem, Event, Note, Reminder } from "@prisma/client";
 import type { DealCategory, LossReason, ReminderStatus } from "./deal";
 import type { EventStatus } from "./event";
 
@@ -21,6 +21,9 @@ export type DealWithRelations = Omit<Deal, "category" | "lossReason"> & {
   createdBy: UserDTO;
   assignedTo: UserDTO | null;
   _count?: { notes: number; reminders: number; attachments: number };
+  // Só vem preenchido quando a query inclui `items` (ver getDeal em actions/deals.ts) —
+  // listDeals (visão de lista/kanban) não inclui, por isso é opcional aqui.
+  items?: DealItem[];
 };
 
 export type NoteWithUser = Note & { user: UserDTO };

@@ -169,6 +169,10 @@ export async function createDealFromEdital(input: EditalImportFormValues): Promi
           client: data.client,
           city: data.city,
           state: data.state,
+          // equipment/model/serialNumber ficam gravados aqui só como legado (campos
+          // descontinuados do formulário — ver comentário no schema Prisma); o dado que o
+          // usuário efetivamente vê e edita é o item abaixo, criado a partir do mesmo
+          // equipamento/modelo extraído do PDF.
           equipment: data.equipment || null,
           model: data.model || null,
           serialNumber: data.serialNumber || null,
@@ -176,6 +180,9 @@ export async function createDealFromEdital(input: EditalImportFormValues): Promi
           status: "Licitação em Aberto",
           deadline: data.deadline ?? null,
           createdById: user.id,
+          items: data.equipment
+            ? { create: [{ object: data.equipment, model: data.model || null, lot: "Lote 01", quantity: 1 }] }
+            : undefined,
         },
       });
 
