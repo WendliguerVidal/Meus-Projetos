@@ -63,6 +63,13 @@ export async function createReminder(input: {
   await logAudit({ dealId: data.dealId, userId: user.id, action: `Criou lembrete: ${data.description}` });
   revalidatePath("/");
 
+  // Garante a serialização correta para o Server Action do Next.js
+  return JSON.parse(JSON.stringify(reminder));
+}
+
+  await logAudit({ dealId: data.dealId, userId: user.id, action: `Criou lembrete: ${data.description}` });
+  revalidatePath("/");
+
   return JSON.parse(JSON.stringify(reminder));
 }
 
