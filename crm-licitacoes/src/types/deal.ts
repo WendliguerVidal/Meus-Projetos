@@ -45,6 +45,7 @@ export const CATEGORY_STATUSES: Record<DealCategory, string[]> = {
     "Licitação em Aberto",
     "Esclarecimento",
     "Impugnação",
+    "Recurso",
     "Negociação em Andamento",
     "Adesão",
   ],
