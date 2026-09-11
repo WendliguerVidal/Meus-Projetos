@@ -5,7 +5,6 @@ import { requireUser } from "@/lib/rbac";
 import {
   CLOSED_DEAL_CATEGORIES,
   CLOSED_EVENT_STATUSES,
-  DOCUMENT_EXPIRY_SOON_DAYS,
   getDealUrgency,
   getEventUrgency,
   getDocumentUrgency,
@@ -18,11 +17,19 @@ import type { Prisma } from "@prisma/client";
 // ---------------------------------------------------------------------------
 // Central de Notificações do cabeçalho — processos e compromissos vencidos ou a vencer
 // nos próximos 3 dias, e documentos (certidões, CNDs, alvarás...) vencidos ou a vencer
-// nos próximos 30 dias (DOCUMENT_EXPIRY_SOON_DAYS — renovar leva mais tempo). Consulta
-// leve: as janelas de data e as categorias/status já encerrados são filtrados no
-// próprio banco (não trazemos tudo para filtrar depois em memória), então o custo
-// cresce só com a quantidade de itens realmente urgentes.
+// nos próximos NOTIFICATION_DOCUMENT_WINDOW_DAYS. Essa janela é bem menor que a usada
+// no badge da página de Documentos (DOCUMENT_EXPIRY_SOON_DAYS, 30 dias — renovar uma
+// certidão leva tempo, então o aviso amarelo lá começa cedo de propósito): aqui, com
+// 30 dias, a Central de Notificações ficava poluída de avisos de documentos com muita
+// antecedência. Consulta leve: as janelas de data e as categorias/status já encerrados
+// são filtrados no próprio banco (não trazemos tudo para filtrar depois em memória),
+// então o custo cresce só com a quantidade de itens realmente urgentes.
 // ---------------------------------------------------------------------------
+
+/** Janela de antecedência para documentos aparecerem na Central de Notificações —
+ * bem menor que a do badge de "vencendo" na página de Documentos (30 dias), só para
+ * não poluir essa área com avisos de meses de antecedência. */
+const NOTIFICATION_DOCUMENT_WINDOW_DAYS = 7;
 
 export type UrgentItem = {
   id: string;
@@ -41,7 +48,7 @@ export type UrgentItem = {
 };
 
 const SOON_WINDOW_MS = 3 * 24 * 60 * 60 * 1000; // mesma janela de 3 dias de lib/urgency
-const DOCUMENT_WINDOW_MS = DOCUMENT_EXPIRY_SOON_DAYS * 24 * 60 * 60 * 1000;
+const DOCUMENT_WINDOW_MS = NOTIFICATION_DOCUMENT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 const MAX_ITEMS_PER_KIND = 30;
 
 export async function getUrgentItems(): Promise<UrgentItem[]> {

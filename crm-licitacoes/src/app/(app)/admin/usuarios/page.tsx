@@ -6,6 +6,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useUsers, useDeleteUser } from "@/hooks/use-users";
 import { UserFormDialog } from "@/components/admin/user-form-dialog";
 import { Plus, Pencil, Trash2, ShieldAlert } from "lucide-react";
@@ -22,9 +23,10 @@ type UserRow = {
 export default function UsuariosPage() {
   const { data: session } = useSession();
   const { data: users, isLoading, error } = useUsers();
-  const { mutate: remove } = useDeleteUser();
+  const { mutate: remove, isPending: removing } = useDeleteUser();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<UserRow | null>(null);
+  const [pendingDelete, setPendingDelete] = React.useState<{ id: string; name: string } | null>(null);
 
   if (session && session.user.role !== "ADMIN") {
     return (
@@ -110,7 +112,7 @@ export default function UsuariosPage() {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => remove(u.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => setPendingDelete({ id: u.id, name: u.name })}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
@@ -122,6 +124,23 @@ export default function UsuariosPage() {
       )}
 
       <UserFormDialog open={dialogOpen} onOpenChange={setDialogOpen} user={editingUser} />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Excluir usuário"
+        description={
+          pendingDelete
+            ? `Tem certeza que deseja excluir o usuário "${pendingDelete.name}"? Essa ação não pode ser desfeita.`
+            : ""
+        }
+        confirmLabel="Excluir"
+        loading={removing}
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          remove(pendingDelete.id, { onSuccess: () => setPendingDelete(null) });
+        }}
+      />
     </div>
   );
 }

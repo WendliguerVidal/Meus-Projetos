@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { UrgencyBadge, UrgencyDot } from "@/components/ui/urgency-badge";
 import { useDealUI } from "@/components/deal-details/deal-ui-context";
 import { useDeleteEvent } from "@/hooks/use-events";
@@ -45,6 +46,7 @@ export function EventChip({
   onEdit: (item: CalendarItem) => void;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [pendingDelete, setPendingDelete] = React.useState(false);
   const { openDeal } = useDealUI();
   const { mutate: removeEvent, isPending: deletingEvent } = useDeleteEvent();
   const { mutate: removeDeal, isPending: deletingDeal } = useDeleteDeal();
@@ -53,21 +55,25 @@ export function EventChip({
   const isEditable = item.kind === "event";
   const deleting = deletingEvent || deletingDeal;
 
+  // Cada chip só conhece o SEU PRÓPRIO item (id/dealId capturados no fechamento acima,
+  // nunca uma lista ou categoria inteira) — a confirmação abaixo sempre exclui só este
+  // evento ou só este processo específico, nunca mais que isso.
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setPendingDelete(true);
+  };
+  const confirmDelete = () => {
     if (item.kind === "event") {
-      removeEvent(item.id, { onSuccess: () => setOpen(false) });
+      removeEvent(item.id, { onSuccess: () => setPendingDelete(false) });
       return;
     }
-    // kind === "deal-deadline": exclui o processo inteiro, não só o marcador — ação
-    // destrutiva e irreversível (remove notas, lembretes, anexos e auditoria junto),
-    // por isso pede confirmação antes.
     if (!item.dealId) return;
-    const confirmed = window.confirm(
-      `Excluir o processo "${item.title}"? Esta ação não pode ser desfeita e remove todo o histórico vinculado a ele.`
-    );
-    if (!confirmed) return;
-    removeDeal(item.dealId, { onSuccess: () => setOpen(false) });
+    removeDeal(item.dealId, {
+      onSuccess: () => {
+        setPendingDelete(false);
+        setOpen(false);
+      },
+    });
   };
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -81,107 +87,126 @@ export function EventChip({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        {variant === "block" ? (
-          <button
-            type="button"
-            onClick={(e) => e.stopPropagation()}
-            className="relative flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-white transition-opacity hover:opacity-90"
-            style={{ backgroundColor: item.color }}
-            title={item.urgencyLevel ? `${item.title} — ${formatUrgencyMessage(item.startDate, item.kind === "deal-deadline")}` : item.title}
-          >
-            {item.urgencyLevel && <UrgencyDot level={item.urgencyLevel} className="shrink-0" />}
-            <span className="truncate">{item.title}</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={(e) => e.stopPropagation()}
-            className="flex w-full items-start gap-1.5 rounded-md border-l-4 bg-card px-2 py-1.5 text-left text-xs shadow-sm hover:bg-accent"
-            style={{ borderLeftColor: item.color }}
-          >
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-1 truncate font-medium">
-                {item.urgencyLevel && <UrgencyDot level={item.urgencyLevel} className="shrink-0" />}
-                <span className="truncate">{item.title}</span>
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          {variant === "block" ? (
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className="relative flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: item.color }}
+              title={item.urgencyLevel ? `${item.title} — ${formatUrgencyMessage(item.startDate, item.kind === "deal-deadline")}` : item.title}
+            >
+              {item.urgencyLevel && <UrgencyDot level={item.urgencyLevel} className="shrink-0" />}
+              <span className="truncate">{item.title}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className="flex w-full items-start gap-1.5 rounded-md border-l-4 bg-card px-2 py-1.5 text-left text-xs shadow-sm hover:bg-accent"
+              style={{ borderLeftColor: item.color }}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1 truncate font-medium">
+                  {item.urgencyLevel && <UrgencyDot level={item.urgencyLevel} className="shrink-0" />}
+                  <span className="truncate">{item.title}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  {item.kind === "deal-deadline" ? "Prazo final" : format(item.startDate, "HH:mm")}
+                </span>
               </span>
-              <span className="text-muted-foreground">
-                {item.kind === "deal-deadline" ? "Prazo final" : format(item.startDate, "HH:mm")}
-              </span>
-            </span>
-          </button>
-        )}
-      </PopoverTrigger>
+            </button>
+          )}
+        </PopoverTrigger>
 
-      <PopoverContent align="start" className="w-80 p-0" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between gap-2 border-b p-3">
-          <div className="flex min-w-0 items-start gap-2">
-            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
-            <h3 className="min-w-0 break-words text-sm font-semibold">{item.title}</h3>
-          </div>
-          <div className="flex shrink-0 items-center gap-0.5">
-            {isEditable && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleEdit} aria-label="Editar evento">
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {isAdmin && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={handleDelete}
-                disabled={deleting}
-                aria-label={item.kind === "event" ? "Excluir evento" : "Excluir processo"}
-              >
-                {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 text-destructive" />}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-2.5 p-3 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Clock className="h-3.5 w-3.5 shrink-0" />
-            <span>{formatDateTimeRange(item)}</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="secondary" className="font-normal">
-              {item.statusLabel}
-            </Badge>
-            {item.urgencyLevel && (
-              <UrgencyBadge date={item.startDate} level={item.urgencyLevel} dateOnly={item.kind === "deal-deadline"} />
-            )}
-          </div>
-
-          {item.org && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Building2 className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{item.org}</span>
+        <PopoverContent align="start" className="w-80 p-0" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-start justify-between gap-2 border-b p-3">
+            <div className="flex min-w-0 items-start gap-2">
+              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
+              <h3 className="min-w-0 break-words text-sm font-semibold">{item.title}</h3>
             </div>
-          )}
+            <div className="flex shrink-0 items-center gap-0.5">
+              {isEditable && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleEdit} aria-label="Editar evento">
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  aria-label={item.kind === "event" ? "Excluir evento" : "Excluir processo"}
+                >
+                  {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 text-destructive" />}
+                </Button>
+              )}
+            </div>
+          </div>
 
-          {item.estimatedValue != null && (
-            <p className="text-muted-foreground">
-              Valor estimado:{" "}
-              <span className="font-medium text-foreground">
-                {item.estimatedValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-              </span>
-            </p>
-          )}
+          <div className="space-y-2.5 p-3 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="h-3.5 w-3.5 shrink-0" />
+              <span>{formatDateTimeRange(item)}</span>
+            </div>
 
-          {item.description && <p className="whitespace-pre-wrap text-foreground/90">{item.description}</p>}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge variant="secondary" className="font-normal">
+                {item.statusLabel}
+              </Badge>
+              {item.urgencyLevel && (
+                <UrgencyBadge date={item.startDate} level={item.urgencyLevel} dateOnly={item.kind === "deal-deadline"} />
+              )}
+            </div>
 
-          {item.dealId && (
-            <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={handleViewDeal}>
-              <ExternalLink className="h-3.5 w-3.5" />
-              Ver todos os detalhes do processo
-            </Button>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
+            {item.org && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Building2 className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{item.org}</span>
+              </div>
+            )}
+
+            {item.estimatedValue != null && (
+              <p className="text-muted-foreground">
+                Valor estimado:{" "}
+                <span className="font-medium text-foreground">
+                  {item.estimatedValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </span>
+              </p>
+            )}
+
+            {item.description && <p className="whitespace-pre-wrap text-foreground/90">{item.description}</p>}
+
+            {item.dealId && (
+              <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={handleViewDeal}>
+                <ExternalLink className="h-3.5 w-3.5" />
+                Ver todos os detalhes do processo
+              </Button>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <ConfirmDialog
+        open={pendingDelete}
+        onOpenChange={setPendingDelete}
+        title={item.kind === "event" ? "Excluir evento" : "Excluir processo"}
+        description={
+          item.kind === "event"
+            ? `Tem certeza que deseja excluir o evento "${item.title}"? Essa ação não pode ser desfeita.`
+            : `Excluir o processo "${item.title}"? Esta ação não pode ser desfeita e remove notas, lembretes, anexos e histórico vinculados só a ele — nenhum outro processo é afetado.`
+        }
+        confirmLabel="Excluir"
+        loading={deleting}
+        // Só o processo exige digitar o título — evita excluir o processo errado por
+        // engano com um único clique, já que a ação remove tudo vinculado a ele.
+        confirmText={item.kind === "deal-deadline" ? item.title : undefined}
+        onConfirm={confirmDelete}
+      />
+    </>
   );
 }
