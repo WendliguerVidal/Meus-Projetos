@@ -20,9 +20,21 @@ import type { CalendarItem } from "@/types/event";
 
 export type CalendarView = "day" | "week" | "month" | "year";
 
-/** Chave estável "yyyy-MM-dd" para agrupar itens por dia (evita comparar objetos Date). */
+/** Chave estável "yyyy-MM-dd" para agrupar itens por dia (evita comparar objetos Date).
+ * `date` aqui é sempre um dia de calendário genuíno no fuso local (célula da grade). */
 export function dateKey(date: Date): string {
   return format(date, "yyyy-MM-dd");
+}
+
+/** Mesma chave "yyyy-MM-dd", mas lendo os componentes UTC — para o prazo de um Deal
+ * (Deal.deadline), que é sempre gravado como meia-noite UTC do dia escolhido no
+ * formulário (ver toCalendarDate em lib/utils.ts). Usar dateKey (fuso local) aqui faria
+ * o prazo cair um dia antes na grade em qualquer fuso atrás de UTC (o Brasil inteiro). */
+function dateKeyUTC(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 /** 42 dias (6 semanas, domingo a sábado) cobrindo o mês de `date`, incluindo dias de
@@ -105,15 +117,23 @@ export function formatViewTitle(view: CalendarView, date: Date): string {
  * startDate e endDate quando o evento tiver múltiplos dias. */
 export function groupItemsByDay(items: CalendarItem[]): Map<string, CalendarItem[]> {
   const map = new Map<string, CalendarItem[]>();
+  const addToDay = (key: string, item: CalendarItem) => {
+    const list = map.get(key);
+    if (list) list.push(item);
+    else map.set(key, [item]);
+  };
+
   for (const item of items) {
+    if (item.kind === "deal-deadline") {
+      // Prazo de Deal: um único dia, sempre lido em UTC — ver dateKeyUTC acima.
+      addToDay(dateKeyUTC(item.startDate), item);
+      continue;
+    }
     const start = startOfDay(item.startDate);
     const end = item.endDate ? startOfDay(item.endDate) : start;
     const span = end >= start ? eachDayOfInterval({ start, end }) : [start];
     for (const day of span) {
-      const key = dateKey(day);
-      const list = map.get(key);
-      if (list) list.push(item);
-      else map.set(key, [item]);
+      addToDay(dateKey(day), item);
     }
   }
   return map;

@@ -54,7 +54,7 @@ export function KanbanCard({ deal }: { deal: DealWithRelations }) {
             <span>{formatDate(deal.deadline)}</span>
           </div>
         )}
-        {deal.deadline && urgency && <UrgencyBadge date={deal.deadline} level={urgency} />}
+        {deal.deadline && urgency && <UrgencyBadge date={deal.deadline} level={urgency} dateOnly />}
         <div className="flex items-center justify-between pt-1">
           <Badge variant="outline" className="text-[10px]">
             {deal.status}

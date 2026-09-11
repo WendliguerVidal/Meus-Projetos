@@ -18,7 +18,42 @@ export function serializeAllowedStates(states: string[]): string {
   return JSON.stringify(states ?? []);
 }
 
+/** Campos "somente-dia" (Deal.deadline, Reminder.dueDate, DocumentFile.expiryDate) vêm
+ * sempre de um <input type="date"> e são gravados como meia-noite UTC do dia escolhido
+ * (é assim que o JS interpreta uma string "yyyy-MM-dd" — ver z.coerce.date() em
+ * types/deal.ts/types/event.ts). Ler esse valor com funções sensíveis ao fuso do
+ * navegador (toLocaleDateString, date-fns) devolve o dia calendário ERRADO em qualquer
+ * fuso atrás de UTC — o Brasil inteiro —, mostrando 1 dia a menos do que foi escolhido.
+ * Esta função extrai o dia calendário direto dos componentes UTC e monta um Date à
+ * meia-noite LOCAL desse mesmo dia — a partir daí, qualquer função local (toLocaleDate-
+ * String, date-fns) lê o dia certo. NÃO usar em campos com hora de verdade (createdAt,
+ * Event.startDate/endDate). */
+export function toCalendarDate(date: Date | string): Date {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+/** Meia-noite de hoje no fuso do navegador — o "hoje" contra o qual comparamos os
+ * campos somente-dia acima (ver toCalendarDate). */
+export function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/** Formata um campo "somente-dia" (deadline, dueDate, expiryDate) como dd/mm/aaaa,
+ * preservando o dia exato escolhido no formulário — ver toCalendarDate() para o porquê
+ * de não usar toLocaleDateString direto aqui. Para timestamps de verdade (createdAt,
+ * updatedAt), use formatLocalDate(). */
 export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return "—";
+  return toCalendarDate(date).toLocaleDateString("pt-BR");
+}
+
+/** Formata a data (dia/mês/ano, sem hora) de um timestamp de verdade no fuso do
+ * navegador — diferente de formatDate(), que é para campos "somente-dia" gravados em
+ * UTC (ver toCalendarDate). Use para createdAt/updatedAt e afins. */
+export function formatLocalDate(date: Date | string | null | undefined): string {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("pt-BR");
@@ -45,17 +80,18 @@ export function initials(name: string): string {
     .join("");
 }
 
+/** `date` é sempre um campo somente-dia (Reminder.dueDate) — comparamos dia calendário
+ * contra dia calendário (ver toCalendarDate/startOfToday), não instante contra instante:
+ * um lembrete com vencimento hoje não deve virar "atrasado" horas antes de o dia acabar. */
 export function isOverdue(date: Date | string | null | undefined): boolean {
   if (!date) return false;
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.getTime() < Date.now();
+  return toCalendarDate(date).getTime() < startOfToday().getTime();
 }
 
 export function daysUntil(date: Date | string | null | undefined): number | null {
   if (!date) return null;
-  const d = typeof date === "string" ? new Date(date) : date;
-  const diff = d.getTime() - Date.now();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  const diff = toCalendarDate(date).getTime() - startOfToday().getTime();
+  return Math.round(diff / (1000 * 60 * 60 * 24));
 }
 
 const MONTH_LABELS_PT = [

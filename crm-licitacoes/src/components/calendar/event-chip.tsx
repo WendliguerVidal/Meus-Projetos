@@ -13,9 +13,18 @@ import { useDeleteDeal } from "@/hooks/use-deals";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import type { CalendarItem } from "@/types/event";
 import { formatUrgencyMessage } from "@/lib/urgency";
+import { toCalendarDate } from "@/lib/utils";
 import { Building2, Clock, ExternalLink, Loader2, Pencil, Trash2 } from "lucide-react";
 
-function formatDateTimeRange(start: Date, end: Date | null): string {
+/** "deal-deadline": Deal.deadline não tem hora de verdade (é meia-noite UTC do dia
+ * escolhido no formulário) — mostramos só a data, extraindo o dia calendário certo via
+ * toCalendarDate (ver lib/utils.ts) em vez do "às 00:00" que um horário de verdade
+ * mostraria. "event": intervalo completo com hora, como antes. */
+function formatDateTimeRange(item: CalendarItem): string {
+  if (item.kind === "deal-deadline") {
+    return format(toCalendarDate(item.startDate), "d 'de' MMMM 'de' yyyy", { locale: ptBR });
+  }
+  const { startDate: start, endDate: end } = item;
   const dateStr = format(start, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
   const startTime = format(start, "HH:mm");
   if (!end) return `${dateStr} às ${startTime}`;
@@ -80,7 +89,7 @@ export function EventChip({
             onClick={(e) => e.stopPropagation()}
             className="relative flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-white transition-opacity hover:opacity-90"
             style={{ backgroundColor: item.color }}
-            title={item.urgencyLevel ? `${item.title} — ${formatUrgencyMessage(item.startDate)}` : item.title}
+            title={item.urgencyLevel ? `${item.title} — ${formatUrgencyMessage(item.startDate, item.kind === "deal-deadline")}` : item.title}
           >
             {item.urgencyLevel && <UrgencyDot level={item.urgencyLevel} className="shrink-0" />}
             <span className="truncate">{item.title}</span>
@@ -97,7 +106,9 @@ export function EventChip({
                 {item.urgencyLevel && <UrgencyDot level={item.urgencyLevel} className="shrink-0" />}
                 <span className="truncate">{item.title}</span>
               </span>
-              <span className="text-muted-foreground">{format(item.startDate, "HH:mm")}</span>
+              <span className="text-muted-foreground">
+                {item.kind === "deal-deadline" ? "Prazo final" : format(item.startDate, "HH:mm")}
+              </span>
             </span>
           </button>
         )}
@@ -133,14 +144,16 @@ export function EventChip({
         <div className="space-y-2.5 p-3 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="h-3.5 w-3.5 shrink-0" />
-            <span>{formatDateTimeRange(item.startDate, item.endDate)}</span>
+            <span>{formatDateTimeRange(item)}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary" className="font-normal">
               {item.statusLabel}
             </Badge>
-            {item.urgencyLevel && <UrgencyBadge date={item.startDate} level={item.urgencyLevel} />}
+            {item.urgencyLevel && (
+              <UrgencyBadge date={item.startDate} level={item.urgencyLevel} dateOnly={item.kind === "deal-deadline"} />
+            )}
           </div>
 
           {item.org && (

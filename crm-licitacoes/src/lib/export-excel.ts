@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import type { DealWithRelations } from "@/types";
 import { CATEGORY_LABELS, LOSS_REASON_LABELS } from "@/types/deal";
-import { formatDate } from "./utils";
+import { formatDate, formatLocalDate } from "./utils";
 
 /** Resume os itens (objeto/lote/quantidade) de um processo em uma única célula de texto,
  * ex: "Retroescavadeira BHL75C (Lote 01) x1; Motoniveladora (Lote 02) x2". */
@@ -33,8 +33,8 @@ export function exportDealsToExcel(deals: DealWithRelations[], fileName = "proce
     Responsável: d.assignedTo?.name ?? "",
     "Criado por": d.createdBy?.name ?? "",
     Prazo: d.deadline ? formatDate(d.deadline) : "",
-    "Criado em": formatDate(d.createdAt),
-    "Atualizado em": formatDate(d.updatedAt),
+    "Criado em": formatLocalDate(d.createdAt),
+    "Atualizado em": formatLocalDate(d.updatedAt),
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(rows);

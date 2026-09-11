@@ -136,7 +136,7 @@ export function DealTable({
                             <TableCell className={cn("whitespace-nowrap text-xs", urgency === "OVERDUE" && "font-semibold text-destructive")}>
                               <div className="flex flex-col items-start gap-1">
                                 <span>{formatDate(deal.deadline)}</span>
-                                {deal.deadline && urgency && <UrgencyBadge date={deal.deadline} level={urgency} />}
+                                {deal.deadline && urgency && <UrgencyBadge date={deal.deadline} level={urgency} dateOnly />}
                               </div>
                             </TableCell>
                             {isAdmin && (

@@ -1,4 +1,5 @@
 import { differenceInCalendarDays, isToday as isTodayFn } from "date-fns";
+import { toCalendarDate, startOfToday } from "@/lib/utils";
 import type { DealCategory } from "@/types/deal";
 import type { EventStatus } from "@/types/event";
 
@@ -33,12 +34,27 @@ export const CLOSED_EVENT_STATUSES: EventStatus[] = ["GANHO", "PERDIDO"];
  *   Deal/Event; documentos usam uma janela maior, ver getDocumentUrgency).
  * 🟢 OK — fora da janela de atenção.
  * `null` quando não há data (nada a destacar).
+ *
+ * `dateOnly` deve ser `true` para campos "somente-dia" (Deal.deadline,
+ * DocumentFile.expiryDate — sempre meia-noite UTC do dia escolhido num
+ * <input type="date">, ver toCalendarDate em lib/utils.ts): comparamos dia
+ * calendário contra dia calendário, não instante contra instante — do contrário um
+ * prazo "hoje" viraria OVERDUE horas antes de o dia acabar. Event.startDate tem hora
+ * de verdade e usa `dateOnly: false` (padrão).
  */
 export function getUrgencyLevel(
   date: Date | string | null | undefined,
-  soonWindowMs: number = SOON_WINDOW_MS
+  soonWindowMs: number = SOON_WINDOW_MS,
+  dateOnly = false
 ): UrgencyLevel | null {
   if (!date) return null;
+  if (dateOnly) {
+    const diffDays = differenceInCalendarDays(toCalendarDate(date), startOfToday());
+    if (diffDays < 0) return "OVERDUE";
+    const soonDays = Math.floor(soonWindowMs / (24 * 60 * 60 * 1000));
+    if (diffDays <= soonDays) return "SOON";
+    return "OK";
+  }
   const d = typeof date === "string" ? new Date(date) : date;
   const diffMs = d.getTime() - Date.now();
   if (diffMs <= 0) return "OVERDUE";
@@ -62,7 +78,7 @@ export function getDealUrgency(
   category: string
 ): UrgencyLevel | null {
   if (CLOSED_DEAL_CATEGORIES.includes(category as DealCategory)) return null;
-  return getUrgencyLevel(deadline);
+  return getUrgencyLevel(deadline, SOON_WINDOW_MS, true);
 }
 
 /** Urgência de um compromisso do calendário — `null` também quando já ganho/perdido. */
@@ -79,7 +95,7 @@ export function getEventUrgency(
  * renovar uma certidão não é instantâneo. `null` quando o documento não tem validade
  * definida (nem todo documento vence). */
 export function getDocumentUrgency(expiryDate: Date | string | null | undefined): UrgencyLevel | null {
-  return getUrgencyLevel(expiryDate, DOCUMENT_SOON_WINDOW_MS);
+  return getUrgencyLevel(expiryDate, DOCUMENT_SOON_WINDOW_MS, true);
 }
 
 export const URGENCY_DOT_COLOR: Record<UrgencyLevel, string> = {
@@ -101,8 +117,23 @@ export const URGENCY_LABELS: Record<UrgencyLevel, string> = {
 };
 
 /** Mensagem curta em português para o card/badge/notificação — ex: "Vence hoje às
- * 14:00", "Atrasado há 1 dia", "Vence em 2 dias". */
-export function formatUrgencyMessage(date: Date | string): string {
+ * 14:00", "Atrasado há 1 dia", "Vence em 2 dias".
+ *
+ * `dateOnly: true` para campos somente-dia (Deal.deadline, DocumentFile.expiryDate —
+ * ver getUrgencyLevel acima): compara dia calendário, sem mostrar hora (a meia-noite
+ * UTC gravada não é um horário de verdade). Event.startDate usa `dateOnly: false`
+ * (padrão), que preserva a hora exata do compromisso. */
+export function formatUrgencyMessage(date: Date | string, dateOnly = false): string {
+  if (dateOnly) {
+    const diffDays = differenceInCalendarDays(toCalendarDate(date), startOfToday());
+    if (diffDays < 0) {
+      const daysLate = Math.abs(diffDays);
+      return `Atrasado há ${daysLate} dia${daysLate === 1 ? "" : "s"}`;
+    }
+    if (diffDays === 0) return "Vence hoje";
+    return `Vence em ${diffDays} dia${diffDays === 1 ? "" : "s"}`;
+  }
+
   const d = typeof date === "string" ? new Date(date) : date;
   const now = new Date();
   const timeStr = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });

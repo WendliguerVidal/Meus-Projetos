@@ -126,7 +126,7 @@ export async function getUrgentItems(): Promise<UrgentItem[]> {
       date: d.deadline,
       // Categoria e janela de data já garantidas pelo WHERE acima — nunca null aqui.
       urgencyLevel: getDealUrgency(d.deadline, d.category)!,
-      message: formatUrgencyMessage(d.deadline),
+      message: formatUrgencyMessage(d.deadline, true),
       dealId: d.id,
       href: null,
     }));
@@ -163,7 +163,7 @@ export async function getUrgentItems(): Promise<UrgentItem[]> {
         org,
         date: expiryDate,
         urgencyLevel: getDocumentUrgency(expiryDate)!,
-        message: formatUrgencyMessage(expiryDate),
+        message: formatUrgencyMessage(expiryDate, true),
         dealId: null,
         href: `/documentos/${f.folderId}`,
       };

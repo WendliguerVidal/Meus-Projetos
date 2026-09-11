@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -18,10 +17,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUpdateFile } from "@/hooks/use-documents";
 import type { DocumentFileItem } from "@/types/document";
 
+/** expiryDate é sempre meia-noite UTC do dia escolhido (ver <input type="date"> e
+ * toCalendarDate em lib/utils.ts) — extraímos o dia calendário direto dos componentes
+ * UTC, não via date-fns/toLocaleDateString (fuso local), que devolveria o dia anterior
+ * em qualquer fuso atrás de UTC (o Brasil inteiro). */
 function toDateInputValue(date: Date | string | null): string {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
-  return format(d, "yyyy-MM-dd");
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 /** Modal "Editar Documento" — nome, validade e observações de um arquivo já enviado
