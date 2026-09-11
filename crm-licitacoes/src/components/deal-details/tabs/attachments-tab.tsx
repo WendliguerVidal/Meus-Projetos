@@ -5,15 +5,17 @@ import { useAttachments, useUploadAttachment, useDeleteAttachment } from "@/hook
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatDateTime } from "@/lib/utils";
 import { File as FileIcon, Trash2, UploadCloud, Loader2 } from "lucide-react";
 
 export function AttachmentsTab({ dealId }: { dealId: string }) {
   const { data: attachments, isLoading } = useAttachments(dealId);
   const { mutate: upload, isPending: uploading } = useUploadAttachment(dealId);
-  const { mutate: remove } = useDeleteAttachment(dealId);
+  const { mutate: remove, isPending: removing } = useDeleteAttachment(dealId);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const isAdmin = useIsAdmin();
+  const [pendingDelete, setPendingDelete] = React.useState<{ id: string; fileName: string } | null>(null);
 
   const handleFile = (file: File | undefined) => {
     if (!file) return;
@@ -64,13 +66,30 @@ export function AttachmentsTab({ dealId }: { dealId: string }) {
               <p className="text-xs text-muted-foreground">{formatDateTime(a.uploadedAt)}</p>
             </div>
             {isAdmin && (
-              <Button variant="ghost" size="icon" onClick={() => remove(a.id)}>
+              <Button variant="ghost" size="icon" onClick={() => setPendingDelete({ id: a.id, fileName: a.fileName })}>
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             )}
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Excluir anexo"
+        description={
+          pendingDelete
+            ? `Tem certeza que deseja excluir o anexo "${pendingDelete.fileName}"? Essa ação não pode ser desfeita.`
+            : ""
+        }
+        confirmLabel="Excluir"
+        loading={removing}
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          remove(pendingDelete.id, { onSuccess: () => setPendingDelete(null) });
+        }}
+      />
     </div>
   );
 }
