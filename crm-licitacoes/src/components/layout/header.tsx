@@ -113,7 +113,7 @@ export function Header({ search, onSearchChange }: { search: string; onSearchCha
                   >
                     <span className="line-clamp-1 font-medium">{item.title}</span>
                     <span className="flex flex-wrap items-center gap-1.5">
-                      <UrgencyBadge date={item.date} level={item.urgencyLevel} />
+                      <UrgencyBadge date={item.date} level={item.urgencyLevel} dateOnly={item.kind !== "event"} />
                       {item.org && <span className="truncate text-xs text-muted-foreground">{item.org}</span>}
                     </span>
                   </button>

@@ -15,14 +15,19 @@ export function UrgencyBadge({
   date,
   level: levelProp,
   className,
+  dateOnly = false,
 }: {
   date: Date | string;
   /** Nível já calculado (ex: excluindo categorias/status encerrados) — evita recalcular
    * a partir só da data quando o chamador precisa aplicar essa regra extra. */
   level?: UrgencyLevel | null;
   className?: string;
+  /** `true` para campos "somente-dia" (Deal.deadline, DocumentFile.expiryDate) — ver
+   * getUrgencyLevel/formatUrgencyMessage em lib/urgency.ts. `false` (padrão) para
+   * Event.startDate, que tem hora de verdade. */
+  dateOnly?: boolean;
 }) {
-  const level = levelProp !== undefined ? levelProp : getUrgencyLevel(date);
+  const level = levelProp !== undefined ? levelProp : getUrgencyLevel(date, undefined, dateOnly);
   if (!level) return null;
 
   return (
@@ -34,7 +39,7 @@ export function UrgencyBadge({
       )}
     >
       <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: URGENCY_DOT_COLOR[level] }} />
-      <span className="truncate">{formatUrgencyMessage(date)}</span>
+      <span className="truncate">{formatUrgencyMessage(date, dateOnly)}</span>
     </span>
   );
 }

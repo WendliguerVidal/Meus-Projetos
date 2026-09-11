@@ -44,7 +44,7 @@ export function DocumentFileRow({
         {file.expiryDate && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Validade: {formatDate(file.expiryDate)}</span>
-            {urgency && <UrgencyBadge date={file.expiryDate} level={urgency} />}
+            {urgency && <UrgencyBadge date={file.expiryDate} level={urgency} dateOnly />}
           </div>
         )}
         {file.notes && <p className="whitespace-pre-wrap text-xs text-foreground/80">{file.notes}</p>}
