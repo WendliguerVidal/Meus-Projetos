@@ -4,7 +4,13 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useReminders, useCreateReminder, useSetReminderStatus } from "@/hooks/use-reminders";
+import {
+  useReminders,
+  useCreateReminder,
+  useUpdateReminder,
+  useDeleteReminder,
+  useSetReminderStatus,
+} from "@/hooks/use-reminders";
 import { useAssignableUsers } from "@/hooks/use-deal-details";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Select,
   SelectContent,
@@ -20,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn, formatDate, isOverdue } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 const formSchema = z.object({
   assignedToId: z.string().min(1, "Selecione um responsável"),
@@ -29,12 +36,27 @@ const formSchema = z.object({
 });
 type FormValues = z.infer<typeof formSchema>;
 
+type Reminder = {
+  id: string;
+  description: string;
+  dueDate: Date | string;
+  status: string;
+  assignedToId: string;
+  assignedTo: { name: string };
+};
+
+const emptyValues: FormValues = { assignedToId: "", dueDate: "", description: "" };
+
 export function RemindersTab({ dealId }: { dealId: string }) {
   const { data: reminders, isLoading } = useReminders(dealId);
   const { data: users } = useAssignableUsers();
-  const { mutate: create, isPending } = useCreateReminder();
+  const { mutate: create, isPending: creating } = useCreateReminder();
+  const { mutate: update, isPending: updating } = useUpdateReminder(dealId);
+  const { mutate: remove } = useDeleteReminder(dealId);
   const { mutate: setStatus } = useSetReminderStatus(dealId);
   const [showForm, setShowForm] = React.useState(false);
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<Reminder | null>(null);
 
   const {
     register,
@@ -43,32 +65,51 @@ export function RemindersTab({ dealId }: { dealId: string }) {
     setValue,
     watch,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: { assignedToId: "", dueDate: "", description: "" } });
+  } = useForm<FormValues>({ resolver: zodResolver(formSchema), defaultValues: emptyValues });
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    reset(emptyValues);
+  };
+
+  const openNewForm = () => {
+    reset(emptyValues);
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEditForm = (reminder: Reminder) => {
+    reset({
+      assignedToId: reminder.assignedToId,
+      dueDate: new Date(reminder.dueDate).toISOString().slice(0, 10),
+      description: reminder.description,
+    });
+    setEditingId(reminder.id);
+    setShowForm(true);
+  };
 
   const onSubmit = (data: FormValues) => {
-    create(
-      {
-        dealId,
-        assignedToId: data.assignedToId,
-        dueDate: data.dueDate,
-        description: data.description,
-      },
-      {
-        onSuccess: () => {
-          reset();
-          setShowForm(false);
-        },
-      }
-    );
+    if (editingId) {
+      update({ id: editingId, ...data }, { onSuccess: closeForm });
+    } else {
+      create({ dealId, ...data }, { onSuccess: closeForm });
+    }
   };
 
   const pending = reminders?.filter((r) => r.status === "PENDING") ?? [];
   const done = reminders?.filter((r) => r.status === "DONE") ?? [];
 
+  const rowProps = {
+    onToggle: (r: Reminder, checked: boolean) => setStatus({ id: r.id, status: checked ? "DONE" : "PENDING" }),
+    onEdit: openEditForm,
+    onDelete: (r: Reminder) => setDeleteTarget(r),
+  };
+
   return (
     <div className="space-y-4">
       {!showForm ? (
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowForm(true)}>
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={openNewForm}>
           <Plus className="h-3.5 w-3.5" />
           Novo Lembrete
         </Button>
@@ -103,11 +144,11 @@ export function RemindersTab({ dealId }: { dealId: string }) {
             {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
           </div>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>
+            <Button type="button" variant="ghost" size="sm" onClick={closeForm}>
               Cancelar
             </Button>
-            <Button type="submit" size="sm" disabled={isPending}>
-              Salvar Lembrete
+            <Button type="submit" size="sm" disabled={creating || updating}>
+              {editingId ? "Salvar Alterações" : "Salvar Lembrete"}
             </Button>
           </div>
         </form>
@@ -123,7 +164,13 @@ export function RemindersTab({ dealId }: { dealId: string }) {
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase text-muted-foreground">Pendentes</p>
           {pending.map((r) => (
-            <ReminderRow key={r.id} reminder={r} onToggle={(checked) => setStatus({ id: r.id, status: checked ? "DONE" : "PENDING" })} />
+            <ReminderRow
+              key={r.id}
+              reminder={r}
+              onToggle={(checked) => rowProps.onToggle(r, checked)}
+              onEdit={() => rowProps.onEdit(r)}
+              onDelete={() => rowProps.onDelete(r)}
+            />
           ))}
         </div>
       )}
@@ -132,10 +179,28 @@ export function RemindersTab({ dealId }: { dealId: string }) {
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase text-muted-foreground">Concluídos</p>
           {done.map((r) => (
-            <ReminderRow key={r.id} reminder={r} onToggle={(checked) => setStatus({ id: r.id, status: checked ? "DONE" : "PENDING" })} />
+            <ReminderRow
+              key={r.id}
+              reminder={r}
+              onToggle={(checked) => rowProps.onToggle(r, checked)}
+              onEdit={() => rowProps.onEdit(r)}
+              onDelete={() => rowProps.onDelete(r)}
+            />
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Excluir lembrete"
+        description={`Tem certeza que deseja excluir o lembrete "${deleteTarget?.description}"? Essa ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          remove(deleteTarget.id, { onSuccess: () => setDeleteTarget(null) });
+        }}
+      />
     </div>
   );
 }
@@ -143,9 +208,13 @@ export function RemindersTab({ dealId }: { dealId: string }) {
 function ReminderRow({
   reminder,
   onToggle,
+  onEdit,
+  onDelete,
 }: {
-  reminder: { id: string; description: string; dueDate: Date; status: string; assignedTo: { name: string } };
+  reminder: Reminder;
   onToggle: (checked: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   const overdue = reminder.status === "PENDING" && isOverdue(reminder.dueDate);
   return (
@@ -159,6 +228,14 @@ function ReminderRow({
           {reminder.assignedTo.name} · {formatDate(reminder.dueDate)}
           {overdue && " (atrasado)"}
         </p>
+      </div>
+      <div className="flex shrink-0 gap-1">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDelete}>
+          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+        </Button>
       </div>
     </div>
   );
