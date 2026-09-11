@@ -28,7 +28,7 @@ export function useTodayReminders() {
 export function useCreateReminder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: createReminder,
+    mutationFn: (input: Parameters<typeof createReminder>[0]) => createReminder(input),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["reminders", variables.dealId] });
       qc.invalidateQueries({ queryKey: ["reminders", "today"] });
@@ -41,7 +41,7 @@ export function useCreateReminder() {
 export function useSetReminderStatus(dealId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: setReminderStatus,
+    mutationFn: (input: Parameters<typeof setReminderStatus>[0]) => setReminderStatus(input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reminders", dealId] });
       qc.invalidateQueries({ queryKey: ["reminders", "today"] });
