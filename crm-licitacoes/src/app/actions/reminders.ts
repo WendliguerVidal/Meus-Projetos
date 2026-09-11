@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, assertCanAccessState, stateScopeWhere } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
-import { reminderSchema, reminderStatusSchema } from "@/types/deal";
+import { reminderSchema, reminderStatusSchema, updateReminderSchema } from "@/types/deal";
 
 export async function listReminders(dealId: string) {
   const user = await requireUser();
@@ -70,6 +70,61 @@ export async function createReminder(input: {
     // Evita que classes complexas (erros do Prisma/Zod) voltem pro cliente e travem o Next.js.
     console.error("Erro interno ao criar lembrete:", error);
     throw new Error(typeof error?.message === "string" ? error.message : "Falha ao processar a criação do lembrete.");
+  }
+}
+
+export async function updateReminder(input: {
+  id: string;
+  assignedToId: string;
+  dueDate: string;
+  description: string;
+}) {
+  try {
+    const user = await requireUser();
+    const data = updateReminderSchema.parse(input);
+
+    const existing = await prisma.reminder.findUniqueOrThrow({
+      where: { id: data.id },
+      include: { deal: true },
+    });
+    assertCanAccessState(user, existing.deal.state);
+
+    const reminder = await prisma.reminder.update({
+      where: { id: data.id },
+      data: {
+        assignedToId: data.assignedToId,
+        description: data.description,
+        dueDate: new Date(data.dueDate),
+      },
+      include: { assignedTo: true },
+    });
+
+    await logAudit({ dealId: existing.dealId, userId: user.id, action: `Editou lembrete: "${data.description}"` });
+    revalidatePath("/");
+
+    return JSON.parse(JSON.stringify(reminder));
+  } catch (error: any) {
+    console.error("Erro interno ao editar lembrete:", error);
+    throw new Error(typeof error?.message === "string" ? error.message : "Falha ao processar a edição do lembrete.");
+  }
+}
+
+export async function deleteReminder(id: string) {
+  try {
+    const user = await requireUser();
+    const existing = await prisma.reminder.findUniqueOrThrow({
+      where: { id },
+      include: { deal: true },
+    });
+    assertCanAccessState(user, existing.deal.state);
+
+    await prisma.reminder.delete({ where: { id } });
+
+    await logAudit({ dealId: existing.dealId, userId: user.id, action: `Excluiu lembrete: "${existing.description}"` });
+    revalidatePath("/");
+  } catch (error: any) {
+    console.error("Erro interno ao excluir lembrete:", error);
+    throw new Error(typeof error?.message === "string" ? error.message : "Falha ao processar a exclusão do lembrete.");
   }
 }
 

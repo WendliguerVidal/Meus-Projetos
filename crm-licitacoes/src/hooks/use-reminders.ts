@@ -6,6 +6,8 @@ import {
   listReminders,
   listTodayReminders,
   createReminder,
+  updateReminder,
+  deleteReminder,
   setReminderStatus,
 } from "@/app/actions/reminders";
 
@@ -35,6 +37,32 @@ export function useCreateReminder() {
       toast.success("Lembrete criado.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao criar lembrete."),
+  });
+}
+
+export function useUpdateReminder(dealId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof updateReminder>[0]) => updateReminder(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reminders", dealId] });
+      qc.invalidateQueries({ queryKey: ["reminders", "today"] });
+      toast.success("Lembrete atualizado.");
+    },
+    onError: (err: Error) => toast.error(err.message || "Erro ao atualizar lembrete."),
+  });
+}
+
+export function useDeleteReminder(dealId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteReminder(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reminders", dealId] });
+      qc.invalidateQueries({ queryKey: ["reminders", "today"] });
+      toast.success("Lembrete excluído.");
+    },
+    onError: (err: Error) => toast.error(err.message || "Erro ao excluir lembrete."),
   });
 }
 

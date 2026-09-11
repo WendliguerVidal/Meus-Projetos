@@ -178,6 +178,13 @@ export const reminderStatusSchema = z.object({
   status: z.enum(REMINDER_STATUSES),
 });
 
+export const updateReminderSchema = z.object({
+  id: z.string().min(1),
+  assignedToId: z.string().min(1, "Selecione um responsável"),
+  dueDate: z.coerce.date(),
+  description: z.string().min(2, "Descrição é obrigatória").max(1000),
+});
+
 export const attachmentSchema = z.object({
   dealId: z.string().min(1),
   fileName: z.string().min(1),
