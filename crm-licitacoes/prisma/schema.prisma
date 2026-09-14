@@ -104,6 +104,10 @@ model DealItem {
   model     String?
   lot       String?
   quantity  Int      @default(1)
+  // Ambos opcionais — preencher fica a critério do usuário (ver dealItemSchema em
+  // types/deal.ts e o CurrencyInput no formulário de Itens do Processo).
+  estimatedValue  Float?
+  negotiatedValue Float?
   dealId    String
   deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

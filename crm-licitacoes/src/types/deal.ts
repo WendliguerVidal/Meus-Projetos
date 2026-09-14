@@ -100,6 +100,20 @@ export type ReminderStatus = (typeof REMINDER_STATUSES)[number];
 // Zod Schemas
 // ---------------------------------------------------------------------------
 
+/** Campo de valor monetário opcional (Valor Estimado/Negociado de um item) — aceita o
+ * `number` que o CurrencyInput já entrega pronto, ou defensivamente uma string BR
+ * ("999999,98") caso o valor venha de outra origem. Nunca obrigatório: fica a critério
+ * do usuário preencher ou não. */
+function optionalMoneyField(label: string) {
+  return z.preprocess((v) => {
+    if (v === "" || v === undefined || v === null) return null;
+    if (typeof v === "number") return v;
+    const normalized = String(v).trim().replace(",", ".");
+    const parsed = Number(normalized);
+    return Number.isNaN(parsed) ? v : parsed;
+  }, z.number({ invalid_type_error: `${label} inválido` }).nonnegative(`${label} deve ser positivo`).nullable()).optional();
+}
+
 /** Um item (objeto/lote) da lista dinâmica de itens de um processo — ver DealItem no
  * schema Prisma. `id` só vem preenchido ao editar um item já salvo; itens novos (ainda
  * não persistidos) trafegam sem `id`. */
@@ -113,6 +127,8 @@ export const dealItemSchema = z.object({
     .int("Quantidade deve ser um número inteiro")
     .positive("Quantidade deve ser maior que zero")
     .default(1),
+  estimatedValue: optionalMoneyField("Valor estimado"),
+  negotiatedValue: optionalMoneyField("Valor negociado"),
 });
 
 export type DealItemFormValues = z.infer<typeof dealItemSchema>;
