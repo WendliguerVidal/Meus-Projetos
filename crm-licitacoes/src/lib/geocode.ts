@@ -1,7 +1,19 @@
-// Coordenadas aproximadas para renderização do Mapa (sem necessidade de chaves pagas /
-// geocodificação externa). Centros dos estados servem de fallback quando a cidade não
-// está no dicionário; um pequeno "jitter" determinístico evita sobreposição total dos pinos.
+import { municipios } from "municipios-brasil/dados";
 
+// Coordenadas para o Mapa de processos — baseadas nos 5.571 municípios do Brasil (dados
+// do IBGE via o pacote `municipios-brasil`), não mais numa lista de ~27 capitais com um
+// deslocamento pseudo-aleatório para o resto. Esse deslocamento aleatório era a causa do
+// bug relatado (prefeituras aparecendo em outro estado, ou no mar): para qualquer cidade
+// fora daquela lista curta, o pino "pulava" para um ponto quase arbitrário dentro de um
+// raio de ~140km do centro do estado. Agora toda cidade real do Brasil é encontrada com
+// sua coordenada oficial; só cai no fallback (centro do estado, sem deslocamento) se o
+// nome digitado não corresponder a nenhum município — e mesmo assim nunca sai do estado
+// certo nem cai no oceano.
+
+/** Centro aproximado de cada UF — usado apenas como fallback quando a cidade digitada não
+ * é encontrada na base de municípios (erro de digitação, nome incompleto etc.). Sem
+ * nenhum deslocamento aleatório: na pior das hipóteses o pino fica no meio do estado
+ * certo, nunca em outro estado ou no mar. */
 export const STATE_CENTERS: Record<string, [number, number]> = {
   AC: [-9.0238, -70.812],
   AL: [-9.5713, -36.782],
@@ -32,54 +44,31 @@ export const STATE_CENTERS: Record<string, [number, number]> = {
   TO: [-10.1753, -48.2982],
 };
 
-const CITY_COORDS: Record<string, [number, number]> = {
-  "belo horizonte": [-19.9167, -43.9345],
-  "são paulo": [-23.5505, -46.6333],
-  "rio de janeiro": [-22.9068, -43.1729],
-  "brasília": [-15.7998, -47.8645],
-  "salvador": [-12.9777, -38.5016],
-  "fortaleza": [-3.7172, -38.5433],
-  "curitiba": [-25.4284, -49.2733],
-  "recife": [-8.0476, -34.877],
-  "porto alegre": [-30.0346, -51.2177],
-  "manaus": [-3.119, -60.0217],
-  "belém": [-1.4558, -48.4902],
-  "goiânia": [-16.6869, -49.2648],
-  "campinas": [-22.9099, -47.0626],
-  "são luís": [-2.5297, -44.3028],
-  "maceió": [-9.6498, -35.7089],
-  "natal": [-5.7945, -35.211],
-  "campo grande": [-20.4697, -54.6201],
-  "joão pessoa": [-7.1195, -34.845],
-  "teresina": [-5.0892, -42.8019],
-  "florianópolis": [-27.5954, -48.548],
-  "vitória": [-20.3155, -40.3128],
-  "aracaju": [-10.9472, -37.0731],
-  "cuiabá": [-15.601, -56.0974],
-  "uberlândia": [-18.9186, -48.2772],
-  "contagem": [-19.9317, -44.0536],
-  "juiz de fora": [-21.7642, -43.3503],
-  "londrina": [-23.3103, -51.1628],
-};
-
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return hash;
+/** Tira acentos, baixa a caixa e normaliza espaços — mesma lógica usada para casar o que
+ * o usuário digitou no campo "Cidade" com o nome oficial do município. */
+function normalize(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
-/** Retorna [lat, lng] aproximados para uma cidade/UF, com leve variação determinística. */
+/** Índice cidade normalizada + UF -> coordenadas, construído uma vez a partir dos 5.571
+ * municípios do IBGE. */
+const CITY_INDEX = new Map<string, [number, number]>();
+for (const m of municipios) {
+  CITY_INDEX.set(`${normalize(m.nome)}|${m.uf}`, [m.latitude, m.longitude]);
+}
+
+/** Retorna [lat, lng] para uma cidade/UF digitada pelo usuário — precisa (base oficial do
+ * IBGE) sempre que o nome bater com um município real; cai no centro do estado (sem
+ * nenhum deslocamento aleatório) só quando não encontra correspondência. */
 export function coordsFor(city: string, state: string): [number, number] {
-  const key = city.trim().toLowerCase();
-  const exact = CITY_COORDS[key];
+  const key = `${normalize(city)}|${state}`;
+  const exact = CITY_INDEX.get(key);
   if (exact) return exact;
 
-  const base = STATE_CENTERS[state] ?? [-14.235, -51.9253]; // centro geográfico do Brasil
-  const h = hashString(`${key}-${state}`);
-  const jitterLat = ((h % 1000) / 1000 - 0.5) * 2.5;
-  const jitterLng = (((h >> 10) % 1000) / 1000 - 0.5) * 2.5;
-  return [base[0] + jitterLat, base[1] + jitterLng];
+  return STATE_CENTERS[state] ?? [-14.235, -51.9253]; // centro geográfico do Brasil
 }
