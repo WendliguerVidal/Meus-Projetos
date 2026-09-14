@@ -15,11 +15,13 @@ import {
   defaultStatusFor,
 } from "@/types/deal";
 import { useAssignableUsers } from "@/hooks/use-deal-details";
+import { useEquipmentList } from "@/hooks/use-equipment";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { ComboboxInput } from "@/components/ui/combobox-input";
 import {
   Select,
   SelectContent,
@@ -55,6 +57,26 @@ export function DealForm({
   submitLabel?: string;
 }) {
   const { data: users } = useAssignableUsers();
+  const { data: equipmentList } = useEquipmentList();
+
+  // Sugestões para Objeto/Equipamento e Modelo (Cadastro de Equipamentos) — a edição
+  // manual livre continua 100% funcionando, isso só alimenta a "setinha" de sugestões.
+  const equipmentObjectOptions = React.useMemo(
+    () => Array.from(new Set((equipmentList ?? []).map((e) => e.object))).sort((a, b) => a.localeCompare(b)),
+    [equipmentList]
+  );
+  const modelOptionsForObject = React.useCallback(
+    (objectValue: string) => {
+      const term = objectValue.trim().toLowerCase();
+      const matches = term
+        ? (equipmentList ?? []).filter((e) => e.object.toLowerCase().includes(term))
+        : equipmentList ?? [];
+      return Array.from(new Set(matches.map((e) => e.model).filter((m): m is string => !!m))).sort((a, b) =>
+        a.localeCompare(b)
+      );
+    },
+    [equipmentList]
+  );
 
   const mergedDefaults = React.useMemo(() => {
     const merged: DealFormValues = { ...emptyDefaults, ...defaultValues };
@@ -262,10 +284,12 @@ export function DealForm({
                     <Label htmlFor={`items.${index}.object`} className="text-xs">
                       Objeto / Equipamento *
                     </Label>
-                    <Input
+                    <ComboboxInput
                       id={`items.${index}.object`}
                       placeholder="Ex: Retroescavadeira"
-                      {...register(`items.${index}.object` as const)}
+                      value={watch(`items.${index}.object`) ?? ""}
+                      onValueChange={(v) => setValue(`items.${index}.object`, v)}
+                      options={equipmentObjectOptions}
                     />
                     {errors.items?.[index]?.object && (
                       <p className="text-xs text-destructive">{errors.items[index]?.object?.message}</p>
@@ -275,10 +299,12 @@ export function DealForm({
                     <Label htmlFor={`items.${index}.model`} className="text-xs">
                       Modelo
                     </Label>
-                    <Input
+                    <ComboboxInput
                       id={`items.${index}.model`}
                       placeholder="Ex: BHL75C"
-                      {...register(`items.${index}.model` as const)}
+                      value={watch(`items.${index}.model`) ?? ""}
+                      onValueChange={(v) => setValue(`items.${index}.model`, v)}
+                      options={modelOptionsForObject(watch(`items.${index}.object`) ?? "")}
                     />
                   </div>
                   <div className="space-y-1">

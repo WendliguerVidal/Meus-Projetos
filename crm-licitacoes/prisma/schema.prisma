@@ -262,3 +262,53 @@ model DocumentFile {
   @@index([expiryDate])
   @@map("document_files")
 }
+
+/// Cadastro de Equipamentos — catálogo de máquinas/equipamentos que a empresa trabalha,
+/// independente de qualquer processo/licitação específico. Serve de base de dados para
+/// consulta e, no formulário de "Itens do Processo" (ver DealForm), alimenta a lista de
+/// sugestões dos campos Objeto/Equipamento e Modelo — sem obrigar a digitação manual,
+/// que continua disponível.
+model Equipment {
+  id     String  @id @default(cuid())
+  object String // "Equipamento" — nome, mostrado na capa do card
+  model  String? // "Modelo" — mostrado na capa do card
+
+  fields EquipmentField[]
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([object])
+  @@map("equipment")
+}
+
+/// Característica dinâmica de um Equipment (ex: "Potência", "Capacidade") — o usuário
+/// define livremente o rótulo e o valor na edição do card. Cada equipamento tem sua
+/// própria lista (não compartilhada): excluir um campo aqui não afeta outros
+/// equipamentos, mesmo que tenham um campo de mesmo nome (ver EquipmentFieldTemplate,
+/// que só guarda os NOMES já usados para pré-preencher novos cards, nunca os valores).
+model EquipmentField {
+  id          String    @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  label       String
+  value       String?
+  order       Int       @default(0)
+
+  @@index([equipmentId])
+  @@map("equipment_fields")
+}
+
+/// Nomes de campos característicos já usados em algum Equipment — não os valores, só os
+/// rótulos (ex: "Potência do motor"). Usado para pré-preencher (com valor vazio) um card
+/// de equipamento novo, assim o usuário não precisa redigitar o nome do campo toda vez;
+/// o valor de cada card continua independente (ver EquipmentField). Cresce só por adição
+/// — excluir um campo de um card específico não remove o nome daqui.
+model EquipmentFieldTemplate {
+  id    String @id @default(cuid())
+  label String @unique
+  order Int    @default(0)
+
+  @@map("equipment_field_templates")
+}
