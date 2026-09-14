@@ -111,6 +111,8 @@ export async function createDeal(input: DealFormValues) {
           model: item.model || null,
           lot: item.lot || null,
           quantity: item.quantity,
+          estimatedValue: item.estimatedValue ?? null,
+          negotiatedValue: item.negotiatedValue ?? null,
         })),
       },
     },
@@ -171,6 +173,8 @@ export async function updateDeal(id: string, input: DealFormValues) {
           model: item.model || null,
           lot: item.lot || null,
           quantity: item.quantity,
+          estimatedValue: item.estimatedValue ?? null,
+          negotiatedValue: item.negotiatedValue ?? null,
         })),
       });
     }

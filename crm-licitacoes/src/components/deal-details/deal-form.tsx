@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
   SelectContent,
@@ -232,7 +233,8 @@ export function DealForm({
           <div>
             <Label className="text-sm font-semibold">Itens do Processo</Label>
             <p className="text-xs text-muted-foreground">
-              Objeto/equipamento, modelo, lote e quantidade — adicione quantos itens forem necessários.
+              Objeto/equipamento, modelo, lote, quantidade e valores (opcionais) — adicione quantos itens
+              forem necessários.
             </p>
           </div>
           <Button
@@ -240,7 +242,9 @@ export function DealForm({
             variant="outline"
             size="sm"
             className="shrink-0 gap-1.5"
-            onClick={() => appendItem({ object: "", model: "", lot: "", quantity: 1 })}
+            onClick={() =>
+              appendItem({ object: "", model: "", lot: "", quantity: 1, estimatedValue: null, negotiatedValue: null })
+            }
           >
             <Plus className="h-3.5 w-3.5" />
             Adicionar Item
@@ -252,68 +256,96 @@ export function DealForm({
         ) : (
           <div className="space-y-3">
             {itemFields.map((field, index) => (
-              <div
-                key={field.id}
-                className="grid grid-cols-1 gap-2 rounded-md border p-3 sm:grid-cols-[2fr_1.5fr_1fr_0.8fr_auto] sm:items-end"
-              >
-                <div className="space-y-1">
-                  <Label htmlFor={`items.${index}.object`} className="text-xs">
-                    Objeto / Equipamento *
-                  </Label>
-                  <Input
-                    id={`items.${index}.object`}
-                    placeholder="Ex: Retroescavadeira"
-                    {...register(`items.${index}.object` as const)}
-                  />
-                  {errors.items?.[index]?.object && (
-                    <p className="text-xs text-destructive">{errors.items[index]?.object?.message}</p>
-                  )}
+              <div key={field.id} className="space-y-2 rounded-md border p-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1.5fr_1fr_0.8fr_auto] sm:items-end">
+                  <div className="space-y-1">
+                    <Label htmlFor={`items.${index}.object`} className="text-xs">
+                      Objeto / Equipamento *
+                    </Label>
+                    <Input
+                      id={`items.${index}.object`}
+                      placeholder="Ex: Retroescavadeira"
+                      {...register(`items.${index}.object` as const)}
+                    />
+                    {errors.items?.[index]?.object && (
+                      <p className="text-xs text-destructive">{errors.items[index]?.object?.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`items.${index}.model`} className="text-xs">
+                      Modelo
+                    </Label>
+                    <Input
+                      id={`items.${index}.model`}
+                      placeholder="Ex: BHL75C"
+                      {...register(`items.${index}.model` as const)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`items.${index}.lot`} className="text-xs">
+                      Lote
+                    </Label>
+                    <Input
+                      id={`items.${index}.lot`}
+                      placeholder="Ex: Lote 01"
+                      {...register(`items.${index}.lot` as const)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`items.${index}.quantity`} className="text-xs">
+                      Qtd. *
+                    </Label>
+                    <Input
+                      id={`items.${index}.quantity`}
+                      type="number"
+                      min={1}
+                      step={1}
+                      {...register(`items.${index}.quantity` as const)}
+                    />
+                    {errors.items?.[index]?.quantity && (
+                      <p className="text-xs text-destructive">{errors.items[index]?.quantity?.message}</p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => removeItem(index)}
+                    aria-label="Remover item"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor={`items.${index}.model`} className="text-xs">
-                    Modelo
-                  </Label>
-                  <Input
-                    id={`items.${index}.model`}
-                    placeholder="Ex: BHL75C"
-                    {...register(`items.${index}.model` as const)}
-                  />
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor={`items.${index}.estimatedValue`} className="text-xs">
+                      Valor Estimado
+                    </Label>
+                    <CurrencyInput
+                      id={`items.${index}.estimatedValue`}
+                      value={watch(`items.${index}.estimatedValue`) ?? null}
+                      onValueChange={(v) => setValue(`items.${index}.estimatedValue`, v)}
+                    />
+                    {errors.items?.[index]?.estimatedValue && (
+                      <p className="text-xs text-destructive">{errors.items[index]?.estimatedValue?.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`items.${index}.negotiatedValue`} className="text-xs">
+                      Valor Negociado
+                    </Label>
+                    <CurrencyInput
+                      id={`items.${index}.negotiatedValue`}
+                      value={watch(`items.${index}.negotiatedValue`) ?? null}
+                      onValueChange={(v) => setValue(`items.${index}.negotiatedValue`, v)}
+                    />
+                    {errors.items?.[index]?.negotiatedValue && (
+                      <p className="text-xs text-destructive">{errors.items[index]?.negotiatedValue?.message}</p>
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor={`items.${index}.lot`} className="text-xs">
-                    Lote
-                  </Label>
-                  <Input
-                    id={`items.${index}.lot`}
-                    placeholder="Ex: Lote 01"
-                    {...register(`items.${index}.lot` as const)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor={`items.${index}.quantity`} className="text-xs">
-                    Qtd. *
-                  </Label>
-                  <Input
-                    id={`items.${index}.quantity`}
-                    type="number"
-                    min={1}
-                    step={1}
-                    {...register(`items.${index}.quantity` as const)}
-                  />
-                  {errors.items?.[index]?.quantity && (
-                    <p className="text-xs text-destructive">{errors.items[index]?.quantity?.message}</p>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => removeItem(index)}
-                  aria-label="Remover item"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
             ))}
           </div>

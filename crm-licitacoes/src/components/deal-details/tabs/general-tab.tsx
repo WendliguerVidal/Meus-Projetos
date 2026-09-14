@@ -25,6 +25,8 @@ export function GeneralTab({ deal }: { deal: DealWithRelations }) {
           model: item.model ?? "",
           lot: item.lot ?? "",
           quantity: item.quantity,
+          estimatedValue: item.estimatedValue ?? null,
+          negotiatedValue: item.negotiatedValue ?? null,
         })),
         category: deal.category,
         status: deal.status,
