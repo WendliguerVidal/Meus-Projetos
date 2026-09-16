@@ -16,11 +16,12 @@ datasource db {
 // ver src/types/deal.ts). Isso mantém o schema portável — funciona sem alterações caso
 // DATABASE_URL aponte para SQLite em algum ambiente local, além de Postgres.
 
-// Role:           "ADMIN" | "USER"
-// DealCategory:   "ANDAMENTO" | "PARALISADA" | "GANHO" | "PERDIDO" | "GARANTIA" | "CONCLUIDO" | "ARQUIVADO"
-// LossReason:     "PRECO" | "ESPECIFICACAO_INADEQUADA" | "FALTA_DOCUMENTACAO" | "DISTANCIA" | "OUTROS"
-// ReminderStatus: "PENDING" | "DONE"
-// EventStatus:    "ABERTO" | "EM_ANALISE" | "GANHO" | "PERDIDO"
+// Role:                  "ADMIN" | "USER"
+// DealCategory:          "ANDAMENTO" | "PARALISADA" | "GANHO" | "PERDIDO" | "GARANTIA" | "CONCLUIDO" | "ARQUIVADO"
+// LossReason:            "PRECO" | "ESPECIFICACAO_INADEQUADA" | "FALTA_DOCUMENTACAO" | "DISTANCIA" | "OUTROS"
+// ReminderStatus:        "PENDING" | "DONE"
+// EventStatus:           "ABERTO" | "EM_ANALISE" | "GANHO" | "PERDIDO"
+// EquipmentFileCategory: "FOTO" | "FICHA_TECNICA"
 
 model User {
   id            String   @id @default(cuid())
@@ -274,6 +275,7 @@ model Equipment {
   model  String? // "Modelo" — mostrado na capa do card
 
   fields EquipmentField[]
+  files  EquipmentFile[]
 
   createdById String?
   createdAt   DateTime @default(now())
@@ -311,4 +313,24 @@ model EquipmentFieldTemplate {
   order Int    @default(0)
 
   @@map("equipment_field_templates")
+}
+
+/// Arquivo anexado a um Equipment — Foto ou Ficha Técnica (ver `category`, EquipmentFile-
+/// Category no comentário do topo do arquivo, e EQUIPMENT_FILE_CATEGORIES em types/
+/// equipment.ts). Mesmo padrão de armazenamento de Attachment/DocumentFile (data URL
+/// base64 em `fileUrl`, ver actions/equipment.ts) — sem depender de blob storage externo.
+/// Cada equipamento pode ter vários arquivos, de qualquer categoria.
+model EquipmentFile {
+  id          String    @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  category    String // String — EquipmentFileCategory
+  fileName    String
+  fileUrl     String    @db.Text
+  fileType    String
+  size        Int // bytes
+  uploadedAt  DateTime  @default(now())
+
+  @@index([equipmentId])
+  @@map("equipment_files")
 }

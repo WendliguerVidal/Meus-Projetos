@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { ComboboxInput } from "@/components/ui/combobox-input";
+import { GenerateProposalDialog } from "@/components/deal-details/generate-proposal-dialog";
 import {
   Select,
   SelectContent,
@@ -29,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { FileText, Loader2, Plus, Trash2 } from "lucide-react";
 
 const emptyDefaults: DealFormValues = {
   title: "",
@@ -46,11 +47,17 @@ const emptyDefaults: DealFormValues = {
 };
 
 export function DealForm({
+  dealId,
   defaultValues,
   onSubmit,
   submitting,
   submitLabel = "Salvar",
 }: {
+  /** Id do processo já salvo — só informado ao editar (ver GeneralTab). Controla a
+   * exibição do botão "Gerar Proposta Comercial": não faz sentido gerar uma proposta
+   * antes de o processo e seus itens existirem (a criação, via NewDealDialog, não passa
+   * esse prop). */
+  dealId?: string;
   defaultValues?: Partial<DealFormValues>;
   onSubmit: (data: DealFormValues) => void;
   submitting?: boolean;
@@ -58,6 +65,7 @@ export function DealForm({
 }) {
   const { data: users } = useAssignableUsers();
   const { data: equipmentList } = useEquipmentList();
+  const [proposalOpen, setProposalOpen] = React.useState(false);
 
   // Sugestões para Objeto/Equipamento e Modelo (Cadastro de Equipamentos) — a edição
   // manual livre continua 100% funcionando, isso só alimenta a "setinha" de sugestões.
@@ -378,10 +386,27 @@ export function DealForm({
         )}
       </div>
 
+      {dealId && (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full gap-1.5"
+          disabled={itemFields.length === 0}
+          onClick={() => setProposalOpen(true)}
+        >
+          <FileText className="h-4 w-4" />
+          Gerar Proposta Comercial
+        </Button>
+      )}
+
       <Button type="submit" className="w-full" disabled={submitting}>
         {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
         {submitLabel}
       </Button>
+
+      {dealId && (
+        <GenerateProposalDialog dealId={dealId} open={proposalOpen} onOpenChange={setProposalOpen} />
+      )}
     </form>
   );
 }

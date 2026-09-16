@@ -5,19 +5,19 @@ import { Wrench, Trash2, Plus, Loader2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EquipmentFileSection } from "@/components/equipment/equipment-file-section";
 import { useCreateEquipment, useUpdateEquipment, useDeleteEquipment } from "@/hooks/use-equipment";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { cn } from "@/lib/utils";
-import type { EquipmentFormValues } from "@/types/equipment";
-
-export type EquipmentWithFields = {
-  id: string;
-  object: string;
-  model: string | null;
-  fields: { id: string; label: string; value: string | null; order: number }[];
-};
+import {
+  EQUIPMENT_FIELD_VALUE_MAX,
+  EQUIPMENT_FILE_CATEGORIES,
+  type EquipmentFormValues,
+  type EquipmentWithFields,
+} from "@/types/equipment";
 
 type FieldRow = { id?: string; label: string; value: string };
 
@@ -213,34 +213,58 @@ export function EquipmentCard({
         ) : (
           <div className="space-y-2">
             {fields.map((field, index) => (
-              <div key={field.id ?? `novo-${index}`} className="flex items-start gap-1.5">
-                <Input
-                  placeholder="Nome do campo (ex: Potência)"
-                  value={field.label}
-                  onChange={(e) => updateField(index, { label: e.target.value })}
-                  className="h-8 flex-1 text-xs font-medium"
-                />
-                <Input
-                  placeholder="Valor"
+              <div key={field.id ?? `novo-${index}`} className="space-y-1.5 rounded-md border p-2">
+                <div className="flex items-start gap-1.5">
+                  <Input
+                    placeholder="Nome do campo (ex: Descrição do Equipamento)"
+                    value={field.label}
+                    onChange={(e) => updateField(index, { label: e.target.value })}
+                    className="h-8 flex-1 text-xs font-medium"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => removeField(index)}
+                    aria-label="Remover campo"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <Textarea
+                  placeholder="Valor (ex: motor, potência, dimensões, capacidades — descrição completa)"
                   value={field.value}
-                  onChange={(e) => updateField(index, { value: e.target.value })}
-                  className="h-8 flex-[1.4] text-xs"
+                  onChange={(e) => updateField(index, { value: e.target.value.slice(0, EQUIPMENT_FIELD_VALUE_MAX) })}
+                  maxLength={EQUIPMENT_FIELD_VALUE_MAX}
+                  rows={4}
+                  className="text-xs"
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => removeField(index)}
-                  aria-label="Remover campo"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                <p className="text-right text-[11px] text-muted-foreground">
+                  {field.value.length}/{EQUIPMENT_FIELD_VALUE_MAX}
+                </p>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {isNew ? (
+        <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+          Salve o equipamento para poder anexar Foto e Ficha Técnica.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {EQUIPMENT_FILE_CATEGORIES.map((category) => (
+            <EquipmentFileSection
+              key={category}
+              equipmentId={equipment.id}
+              category={category}
+              files={equipment.files.filter((f) => f.category === category)}
+            />
+          ))}
+        </div>
+      )}
 
       <div className={cn("flex items-center gap-2", isNew ? "justify-end" : "justify-between")}>
         {!isNew && isAdmin && (
