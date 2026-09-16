@@ -72,19 +72,10 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: "#b7b9be",
   },
-  fixedNote: {
-    borderWidth: 1,
-    borderColor: COLOR.line,
-    backgroundColor: COLOR.paperDim,
-    borderRadius: 4,
-    padding: 10,
-    marginBottom: 18,
-  },
-  fixedNoteLabel: { fontFamily: "Helvetica-Bold", fontSize: 7.5, color: "#8a8d94", marginBottom: 3 },
-  fixedNoteValue: { fontSize: 9, color: COLOR.text, lineHeight: 1.5 },
-  label: { fontFamily: "Helvetica-Bold", fontSize: 9, color: COLOR.text, marginBottom: 2 },
-  value: { fontSize: 10, color: COLOR.text, marginBottom: 12 },
-  paragraph: { fontSize: 9.5, color: "#3a3d44", lineHeight: 1.6, marginBottom: 18 },
+  irmenLetterhead: { fontSize: 11, color: COLOR.text, lineHeight: 1.5, marginBottom: 2 },
+  label: { fontFamily: "Helvetica-Bold", fontSize: 10.5, color: COLOR.text, marginBottom: 3 },
+  value: { fontSize: 13, color: COLOR.text, marginBottom: 12 },
+  paragraph: { fontSize: 11, color: "#3a3d44", lineHeight: 1.6, marginBottom: 18 },
   equipTitle: { fontFamily: "Helvetica-Bold", fontSize: 20, color: COLOR.text, marginBottom: 2 },
   equipModel: { fontFamily: "Helvetica-Bold", fontSize: 13, color: COLOR.accent, marginBottom: 16 },
   photosGrid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -5 },
@@ -113,16 +104,16 @@ const styles = StyleSheet.create({
   },
   condValueRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.line },
   condValueCell: { padding: 9, fontSize: 9.5 },
-  consultantOverlay: { position: "absolute", top: 88, left: 48, width: 260 },
-  consultantName: { fontFamily: "Helvetica-Bold", fontSize: 11, marginBottom: 8, color: "#1c1e22" },
+  consultantOverlay: { position: "absolute", top: 88, left: 48, width: 300 },
+  consultantName: { fontFamily: "Helvetica-Bold", fontSize: 16, marginBottom: 10, color: "#1c1e22" },
   consultantLabel: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 7.5,
+    fontSize: 10,
     textTransform: "uppercase",
     color: "#1c1e22",
-    marginTop: 7,
+    marginTop: 9,
   },
-  consultantValue: { fontSize: 8.5, color: "#3a3d44", lineHeight: 1.4 },
+  consultantValue: { fontSize: 11, color: "#3a3d44", lineHeight: 1.4 },
 });
 
 /** Coluna com largura fixa (soma ≈ CONTENT_W) reaproveitada nas tabelas de preços/
@@ -165,24 +156,23 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
             style={{
               position: "absolute",
               right: PAGE_W * 0.05,
-              bottom: -16,
-              width: PAGE_W * 0.15,
-              height: (PAGE_W * 0.15) / (312 / 420),
+              bottom: -28,
+              width: PAGE_W * 0.24,
+              height: (PAGE_W * 0.24) / (312 / 420),
             }}
           />
         </View>
 
         <View style={{ padding: MARGIN, flex: 1 }}>
-          <View style={styles.fixedNote}>
-            <Text style={styles.fixedNoteLabel}>DADOS DA IRMEN</Text>
-            <Text style={styles.fixedNoteValue}>
-              Empresa: IRMEN MAQUINAS E EQUIPAMENTOS · CNPJ: 10.657.159/0001-37{"\n"}
-              Filial – São Paulo · Rua Valença, n° 542, B. Palmeiras de São José — São José dos Campos/SP
-            </Text>
-          </View>
+          <Text style={styles.irmenLetterhead}>Empresa: IRMEN MAQUINAS E EQUIPAMENTOS</Text>
+          <Text style={styles.irmenLetterhead}>CNPJ: 10.657.159/0001-37</Text>
+          <Text style={styles.irmenLetterhead}>Filial – São Paulo</Text>
+          <Text style={[styles.irmenLetterhead, { marginBottom: 18 }]}>
+            Rua Valença, n° 542 B. Palmeiras de São José – CEP: 12.237-824 São Jose dos Campos
+          </Text>
 
-          <Text style={{ fontSize: 9.5, color: COLOR.muted, marginBottom: 6 }}>À</Text>
-          <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 11, marginBottom: 18 }}>{data.clienteNome}</Text>
+          <Text style={{ fontSize: 10.5, color: COLOR.muted, marginBottom: 6 }}>À</Text>
+          <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 15, marginBottom: 18 }}>{data.clienteNome}</Text>
 
           <Text style={styles.paragraph}>
             Temos o prazer de trazer uma breve introdução sobre a Irmen e apresentar as nossas condições
