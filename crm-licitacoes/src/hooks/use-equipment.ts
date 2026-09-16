@@ -8,6 +8,8 @@ import {
   createEquipment,
   updateEquipment,
   deleteEquipment,
+  uploadEquipmentFile,
+  deleteEquipmentFile,
 } from "@/app/actions/equipment";
 import type { EquipmentFormValues } from "@/types/equipment";
 
@@ -72,5 +74,36 @@ export function useDeleteEquipment() {
       toast.success("Equipamento excluído.");
     },
     onError: (err: Error) => toast.error(err.message || "Erro ao excluir equipamento."),
+  });
+}
+
+export function useUploadEquipmentFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      const result = await uploadEquipmentFile(formData);
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["equipment"] });
+      toast.success("Arquivo enviado.");
+    },
+    onError: (err: Error) => toast.error(err.message || "Erro ao enviar arquivo."),
+  });
+}
+
+export function useDeleteEquipmentFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const result = await deleteEquipmentFile(id);
+      if (!result.success) throw new Error(result.error);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["equipment"] });
+      toast.success("Arquivo excluído.");
+    },
+    onError: (err: Error) => toast.error(err.message || "Erro ao excluir arquivo."),
   });
 }

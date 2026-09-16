@@ -4,8 +4,9 @@ import * as React from "react";
 import { Wrench, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EquipmentCard, type EquipmentWithFields } from "@/components/equipment/equipment-card";
+import { EquipmentCard } from "@/components/equipment/equipment-card";
 import { useEquipmentList, useEquipmentFieldTemplates } from "@/hooks/use-equipment";
+import type { EquipmentWithFields } from "@/types/equipment";
 import { useSearch } from "@/components/layout/search-context";
 
 /** Cadastro de Equipamentos — catálogo de máquinas/equipamentos da empresa, exibido como
