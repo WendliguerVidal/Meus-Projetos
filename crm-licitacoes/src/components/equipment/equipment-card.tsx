@@ -103,9 +103,12 @@ export function EquipmentCard({
     const payload: EquipmentFormValues = {
       object: trimmedObject,
       model: model.trim(),
-      // Campo sem nome não faz sentido salvar — descarta silenciosamente linhas em
-      // branco deixadas por "Novo Campo" ou pelos campos pré-preenchidos não usados.
-      fields: fields.filter((f) => f.label.trim().length > 0).map((f) => ({ id: f.id, label: f.label.trim(), value: f.value })),
+      // Descarta só a linha totalmente vazia (nome E valor em branco) — deixada por
+      // "Novo Campo" ou por um campo pré-preenchido não usado. Um valor sem nome é
+      // válido (ex: usar "Características" como uma única descrição livre) e é mantido.
+      fields: fields
+        .filter((f) => f.label.trim().length > 0 || f.value.trim().length > 0)
+        .map((f) => ({ id: f.id, label: f.label.trim(), value: f.value })),
     };
 
     if (isNew) {
