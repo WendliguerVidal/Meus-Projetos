@@ -112,6 +112,11 @@ export async function getProposalDefaults(dealId: string): Promise<ActionResult<
         dataProposta: new Date().toLocaleDateString("pt-BR"),
         clienteNome: deal.client,
         localEntrega: `${deal.city}/${deal.state}`,
+        // Sugestão de partida — quem está gerando a proposta pode não ser quem vai
+        // assinar (ex: a coordenadora gera para outro consultor), por isso é só um
+        // padrão inicial editável, nunca fixo no documento.
+        consultorNome: user.name ?? "",
+        consultorEmail: user.email ?? "",
         items,
       },
     };
@@ -184,6 +189,10 @@ export async function generateProposalPdf(
           localEntrega: data.localEntrega ?? "",
           prazoEntrega: data.prazoEntrega ?? "",
           validadeProposta: data.validadeProposta ?? "",
+          consultorNome: data.consultorNome,
+          consultorCargo: data.consultorCargo ?? "",
+          consultorContato: data.consultorContato ?? "",
+          consultorEmail: data.consultorEmail ?? "",
           items: documentItems,
         }}
       />
