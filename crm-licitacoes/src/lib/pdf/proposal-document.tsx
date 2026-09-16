@@ -104,16 +104,16 @@ const styles = StyleSheet.create({
   },
   condValueRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.line },
   condValueCell: { padding: 9, fontSize: 9.5 },
-  consultantOverlay: { position: "absolute", top: 88, left: 48, width: 300 },
-  consultantName: { fontFamily: "Helvetica-Bold", fontSize: 16, marginBottom: 10, color: "#1c1e22" },
+  consultantOverlay: { position: "absolute", top: 88, left: 48, width: 340 },
+  consultantName: { fontFamily: "Helvetica-Bold", fontSize: 21, marginBottom: 12, color: "#1c1e22" },
   consultantLabel: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 10,
+    fontSize: 13,
     textTransform: "uppercase",
     color: "#1c1e22",
-    marginTop: 9,
+    marginTop: 11,
   },
-  consultantValue: { fontSize: 11, color: "#3a3d44", lineHeight: 1.4 },
+  consultantValue: { fontSize: 14, color: "#3a3d44", lineHeight: 1.4 },
 });
 
 /** Coluna com largura fixa (soma ≈ CONTENT_W) reaproveitada nas tabelas de preços/
