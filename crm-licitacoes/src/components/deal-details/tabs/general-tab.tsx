@@ -14,6 +14,7 @@ export function GeneralTab({ deal }: { deal: DealWithRelations }) {
 
   return (
     <DealForm
+      dealId={deal.id}
       defaultValues={{
         title: deal.title,
         client: deal.client,
