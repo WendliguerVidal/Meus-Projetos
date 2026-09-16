@@ -30,6 +30,13 @@ export const generateProposalSchema = z.object({
   localEntrega: z.string().max(300).optional().or(z.literal("")),
   prazoEntrega: z.string().max(120).optional().or(z.literal("")),
   validadeProposta: z.string().max(120).optional().or(z.literal("")),
+  // Dados do consultor na última página — quem está enviando a proposta muda conforme o
+  // processo (coordenadora, outro consultor etc.), por isso são editáveis por geração em
+  // vez de fixos no documento.
+  consultorNome: z.string().min(1, "Informe o nome do consultor").max(150),
+  consultorCargo: z.string().max(80).optional().or(z.literal("")),
+  consultorContato: z.string().max(120).optional().or(z.literal("")),
+  consultorEmail: z.string().max(150).optional().or(z.literal("")),
   items: z.array(proposalItemInputSchema).min(1, "Adicione ao menos um item ao processo antes de gerar a proposta"),
 });
 export type GenerateProposalFormValues = z.infer<typeof generateProposalSchema>;
@@ -53,5 +60,7 @@ export type ProposalDefaults = {
   dataProposta: string;
   clienteNome: string;
   localEntrega: string;
+  consultorNome: string;
+  consultorEmail: string;
   items: ProposalItemDefault[];
 };

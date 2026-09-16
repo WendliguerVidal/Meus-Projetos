@@ -53,6 +53,10 @@ export function GenerateProposalDialog({
   const [localEntrega, setLocalEntrega] = React.useState("");
   const [prazoEntrega, setPrazoEntrega] = React.useState("");
   const [validadeProposta, setValidadeProposta] = React.useState("60 dias");
+  const [consultorNome, setConsultorNome] = React.useState("");
+  const [consultorCargo, setConsultorCargo] = React.useState("Consultor");
+  const [consultorContato, setConsultorContato] = React.useState("");
+  const [consultorEmail, setConsultorEmail] = React.useState("");
   const [items, setItems] = React.useState<ItemFormState[]>([]);
   const [loadError, setLoadError] = React.useState(false);
 
@@ -72,6 +76,10 @@ export function GenerateProposalDialog({
         setPrazoGarantia("");
         setPrazoEntrega("");
         setValidadeProposta("60 dias");
+        setConsultorNome(data.consultorNome);
+        setConsultorCargo("Consultor");
+        setConsultorContato("");
+        setConsultorEmail(data.consultorEmail);
         setItems(
           data.items.map((it) => ({
             dealItemId: it.dealItemId,
@@ -106,6 +114,10 @@ export function GenerateProposalDialog({
         localEntrega,
         prazoEntrega,
         validadeProposta,
+        consultorNome,
+        consultorCargo,
+        consultorContato,
+        consultorEmail,
         items: items.map((it) => ({
           dealItemId: it.dealItemId,
           descriptiveText: it.descriptiveText,
@@ -242,6 +254,43 @@ export function GenerateProposalDialog({
                 <div className="space-y-1">
                   <Label className="text-xs">Validade da Proposta</Label>
                   <Input value={validadeProposta} onChange={(e) => setValidadeProposta(e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-lg border p-3">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground">Dados do Consultor</p>
+                <p className="text-xs text-muted-foreground">
+                  Quem está enviando esta proposta — muda conforme o processo (outro consultor, a coordenadora etc.).
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="proposal-consultor-nome" className="text-xs">Nome</Label>
+                  <Input id="proposal-consultor-nome" value={consultorNome} onChange={(e) => setConsultorNome(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="proposal-consultor-cargo" className="text-xs">Cargo</Label>
+                  <Input
+                    id="proposal-consultor-cargo"
+                    value={consultorCargo}
+                    onChange={(e) => setConsultorCargo(e.target.value)}
+                    placeholder="Ex: Consultor, Coordenadora"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="proposal-consultor-contato" className="text-xs">Telefone(s)</Label>
+                  <Input
+                    id="proposal-consultor-contato"
+                    value={consultorContato}
+                    onChange={(e) => setConsultorContato(e.target.value)}
+                    placeholder="Ex: (31) 99999-9999 / 31 3333-3333"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="proposal-consultor-email" className="text-xs">Email</Label>
+                  <Input id="proposal-consultor-email" value={consultorEmail} onChange={(e) => setConsultorEmail(e.target.value)} />
                 </div>
               </div>
             </div>

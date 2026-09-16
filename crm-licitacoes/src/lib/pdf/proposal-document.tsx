@@ -46,6 +46,10 @@ export type ProposalDocumentData = {
   localEntrega: string;
   prazoEntrega: string;
   validadeProposta: string;
+  consultorNome: string;
+  consultorCargo: string;
+  consultorContato: string;
+  consultorEmail: string;
   items: ProposalDocumentItem[];
 };
 
@@ -316,17 +320,26 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
         <Image src={PROPOSAL_ASSETS.unitsPostSale} style={styles.fullBleed} />
       </Page>
 
-      {/* Contato/QR (fixa) + Consultor sobreposto (fixo) */}
+      {/* Contato/QR (fixa) + dados de quem está enviando a proposta (editável por
+          geração — muda conforme o processo: coordenadora, outro consultor etc.) */}
       <Page size="A4">
         <View style={{ position: "relative" }}>
           <Image src={PROPOSAL_ASSETS.contactPage} style={styles.fullBleed} />
           <View style={styles.consultantOverlay}>
-            <Text style={styles.consultantName}>ANA PAULA ANTUNES VIDAL</Text>
-            <Text style={styles.consultantLabel}>Consultor</Text>
-            <Text style={styles.consultantLabel}>Contato</Text>
-            <Text style={styles.consultantValue}>(31) 99468-7104 / 31 3369-3698</Text>
-            <Text style={styles.consultantLabel}>Email</Text>
-            <Text style={styles.consultantValue}>ana.vidal@irmen.com.br</Text>
+            <Text style={styles.consultantName}>{data.consultorNome.toUpperCase()}</Text>
+            {!!data.consultorCargo && <Text style={styles.consultantLabel}>{data.consultorCargo}</Text>}
+            {!!data.consultorContato && (
+              <>
+                <Text style={styles.consultantLabel}>Contato</Text>
+                <Text style={styles.consultantValue}>{data.consultorContato}</Text>
+              </>
+            )}
+            {!!data.consultorEmail && (
+              <>
+                <Text style={styles.consultantLabel}>Email</Text>
+                <Text style={styles.consultantValue}>{data.consultorEmail}</Text>
+              </>
+            )}
           </View>
         </View>
       </Page>
