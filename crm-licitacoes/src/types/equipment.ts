@@ -13,10 +13,13 @@ import type { Equipment, EquipmentField } from "@prisma/client";
 export const EQUIPMENT_FIELD_VALUE_MAX = 5000;
 
 /** Um campo característico dinâmico (ex: "Potência" -> "180cv") de um card de
- * equipamento. `id` só vem preenchido ao editar um campo já salvo. */
+ * equipamento. `id` só vem preenchido ao editar um campo já salvo. O nome do campo é
+ * opcional — permite usar "Características" como uma única descrição livre, sem
+ * precisar rotular cada característica (o card só descarta a linha se label E valor
+ * estiverem vazios, ver handleSave em equipment-card.tsx). */
 export const equipmentFieldSchema = z.object({
   id: z.string().optional(),
-  label: z.string().min(1, "Informe o nome do campo").max(120),
+  label: z.string().max(120),
   value: z.string().max(EQUIPMENT_FIELD_VALUE_MAX).optional().or(z.literal("")),
 });
 export type EquipmentFieldFormValues = z.infer<typeof equipmentFieldSchema>;
