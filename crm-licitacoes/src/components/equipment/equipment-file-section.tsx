@@ -22,16 +22,27 @@ export function EquipmentFileSection({
   equipmentId,
   category,
   files,
+  onDeleteDialogOpenChange,
 }: {
   equipmentId: string;
   category: EquipmentFileCategory;
   files: EquipmentFileItem[];
+  /** Avisa o card pai quando o diálogo de confirmação de exclusão abre/fecha — o
+   * diálogo é renderizado num portal fora da área que o card observa para recolher ao
+   * clicar fora, então sem isso um clique nele é lido como "clique fora" e fecha o card
+   * antes do clique em "Excluir" chegar a disparar a exclusão. */
+  onDeleteDialogOpenChange?: (open: boolean) => void;
 }) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const isAdmin = useIsAdmin();
   const { mutate: upload, isPending: uploading } = useUploadEquipmentFile();
   const { mutate: remove, isPending: removing } = useDeleteEquipmentFile();
   const [pendingDelete, setPendingDelete] = React.useState<{ id: string; fileName: string } | null>(null);
+
+  const updatePendingDelete = (value: { id: string; fileName: string } | null) => {
+    setPendingDelete(value);
+    onDeleteDialogOpenChange?.(!!value);
+  };
 
   const handleFile = (file: File | undefined) => {
     if (!file) return;
@@ -90,7 +101,7 @@ export function EquipmentFileSection({
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 shrink-0 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => setPendingDelete({ id: file.id, fileName: file.fileName })}
+                    onClick={() => updatePendingDelete({ id: file.id, fileName: file.fileName })}
                     aria-label="Excluir arquivo"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -104,7 +115,7 @@ export function EquipmentFileSection({
 
       <ConfirmDialog
         open={!!pendingDelete}
-        onOpenChange={(open) => !open && setPendingDelete(null)}
+        onOpenChange={(open) => !open && updatePendingDelete(null)}
         title="Excluir arquivo"
         description={
           pendingDelete ? `Tem certeza que deseja excluir "${pendingDelete.fileName}"? Essa ação não pode ser desfeita.` : ""
@@ -113,7 +124,7 @@ export function EquipmentFileSection({
         loading={removing}
         onConfirm={() => {
           if (!pendingDelete) return;
-          remove(pendingDelete.id, { onSuccess: () => setPendingDelete(null) });
+          remove(pendingDelete.id, { onSuccess: () => updatePendingDelete(null) });
         }}
       />
     </div>
