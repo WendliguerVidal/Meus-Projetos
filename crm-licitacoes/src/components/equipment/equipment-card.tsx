@@ -57,6 +57,10 @@ export function EquipmentCard({
   const [fields, setFields] = React.useState<FieldRow[]>(buildInitialFields);
   const [objectError, setObjectError] = React.useState(false);
   const [pendingDelete, setPendingDelete] = React.useState(false);
+  // Quantos diálogos de exclusão de arquivo (Foto/Ficha Técnica) estão abertos no
+  // momento — eles são renderizados num portal fora de cardRef, então sem isso o
+  // clique-fora abaixo os confunde com um clique fora do card e o recolhe.
+  const [openFileDialogCount, setOpenFileDialogCount] = React.useState(0);
 
   const cardRef = React.useRef<HTMLDivElement>(null);
 
@@ -71,10 +75,11 @@ export function EquipmentCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isExpanded]);
 
-  // Clicar fora da área do card recolhe — mas nunca enquanto o diálogo de confirmação
-  // de exclusão está aberto (ele é renderizado fora desta div via portal).
+  // Clicar fora da área do card recolhe — mas nunca enquanto algum diálogo de
+  // confirmação de exclusão está aberto (equipamento ou arquivo), já que eles são
+  // renderizados fora desta div via portal e contariam como "clique fora".
   React.useEffect(() => {
-    if (!isExpanded || pendingDelete) return;
+    if (!isExpanded || pendingDelete || openFileDialogCount > 0) return;
     function handlePointerDown(e: MouseEvent) {
       if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
         onCollapse();
@@ -82,7 +87,7 @@ export function EquipmentCard({
     }
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [isExpanded, pendingDelete, onCollapse]);
+  }, [isExpanded, pendingDelete, openFileDialogCount, onCollapse]);
 
   const updateField = (index: number, patch: Partial<FieldRow>) => {
     setFields((prev) => prev.map((f, i) => (i === index ? { ...f, ...patch } : f)));
@@ -264,6 +269,9 @@ export function EquipmentCard({
               equipmentId={equipment.id}
               category={category}
               files={equipment.files.filter((f) => f.category === category)}
+              onDeleteDialogOpenChange={(open) =>
+                setOpenFileDialogCount((count) => Math.max(0, count + (open ? 1 : -1)))
+              }
             />
           ))}
         </div>
