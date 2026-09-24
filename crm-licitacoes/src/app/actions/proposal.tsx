@@ -152,14 +152,25 @@ export async function generateProposalPdf(
 
       const matched = await findMatchingEquipment(dealItem.object, dealItem.model);
       let photos: string[] = [];
+      let specFields: { label: string; value: string }[] = [];
       if (matched) {
-        const files = await prisma.equipmentFile.findMany({
-          where: { equipmentId: matched.id, category: "FOTO" },
-          orderBy: { uploadedAt: "asc" },
-          take: 4,
-          select: { fileUrl: true },
-        });
+        const [files, fields] = await Promise.all([
+          prisma.equipmentFile.findMany({
+            where: { equipmentId: matched.id, category: "FOTO" },
+            orderBy: { uploadedAt: "asc" },
+            take: 4,
+            select: { fileUrl: true },
+          }),
+          prisma.equipmentField.findMany({
+            where: { equipmentId: matched.id },
+            orderBy: { order: "asc" },
+            select: { label: true, value: true },
+          }),
+        ]);
         photos = files.map((f) => f.fileUrl);
+        specFields = fields
+          .filter((f): f is { label: string; value: string } => !!f.value?.trim())
+          .map((f) => ({ label: f.label, value: f.value }));
       }
 
       documentItems.push({
@@ -170,6 +181,7 @@ export async function generateProposalPdf(
         totalValue: itemInput.totalValue,
         descriptiveText: itemInput.descriptiveText || "",
         photos,
+        specFields,
       });
     }
 
