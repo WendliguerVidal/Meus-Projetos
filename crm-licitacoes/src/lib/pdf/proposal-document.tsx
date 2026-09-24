@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     color: "#9a9a9a",
     textAlign: "center",
   },
-  sectionHeaderRow: { flexDirection: "row", alignItems: "stretch", marginBottom: 12, marginTop: 4 },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "stretch", marginBottom: 8, marginTop: 2 },
   sectionHeaderBar: { width: 3, backgroundColor: COLOR.accent, marginRight: 8 },
   sectionHeaderText: {
     fontFamily: "Helvetica-Bold",
@@ -92,9 +92,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   hr: { borderBottomWidth: 1, borderBottomColor: COLOR.line },
-  headerBlockRow: { flexDirection: "row", paddingVertical: 14 },
-  headerBlockLabel: { fontFamily: "Helvetica-Bold", fontSize: 9, color: COLOR.text, marginBottom: 2 },
-  headerBlockValue: { fontSize: 9.5, color: COLOR.body, marginBottom: 7 },
+  headerBlockRow: { flexDirection: "row", paddingVertical: 10 },
+  headerBlockLabel: { fontFamily: "Helvetica-Bold", fontSize: 9, color: COLOR.text, marginBottom: 1 },
+  headerBlockValue: { fontSize: 9.5, color: COLOR.body, marginBottom: 5 },
   proponenteLabel: {
     fontFamily: "Helvetica-Bold",
     fontSize: 8,
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   proponenteLine: { fontSize: 9, color: COLOR.body, lineHeight: 1.5 },
-  paragraph: { fontSize: 10, color: COLOR.body, lineHeight: 1.6, marginBottom: 16 },
+  paragraph: { fontSize: 10, color: COLOR.body, lineHeight: 1.5, marginBottom: 10 },
   equipTitle: {
     fontFamily: "Helvetica-Bold",
     fontSize: 19,
@@ -113,13 +113,10 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   equipModel: { fontFamily: "Helvetica-Bold", fontSize: 12.5, color: COLOR.accent, marginBottom: 14 },
-  photosGrid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -5, marginBottom: 14 },
-  photoBox: { width: CONTENT_W / 2 - 10, height: (CONTENT_W / 2 - 10) * 0.72, margin: 5 },
-  photoImg: { width: "100%", height: "100%", objectFit: "cover" },
   specTable: { marginBottom: 14 },
   specRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.line },
-  specLabelCell: { width: 150, backgroundColor: COLOR.shade, padding: 7, fontFamily: "Helvetica-Bold", fontSize: 8.5 },
-  specValueCell: { flex: 1, padding: 7, fontSize: 8.5, color: COLOR.body },
+  specLabelCell: { width: 95, backgroundColor: COLOR.shade, padding: 6, fontFamily: "Helvetica-Bold", fontSize: 7.5 },
+  specValueCell: { flex: 1, padding: 6, fontSize: 7.5, color: COLOR.body },
   tableHeaderRow: { flexDirection: "row", backgroundColor: COLOR.ink },
   tableHeaderCell: {
     color: "#fff",
@@ -232,7 +229,7 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
             </View>
           </View>
 
-          <Text style={[styles.paragraph, { marginTop: 18 }]}>
+          <Text style={[styles.paragraph, { marginTop: 12 }]}>
             Temos o prazer de apresentar uma breve introdução sobre a Irmen e as nossas condições comerciais
             referentes ao {data.dealTitle}.
           </Text>
@@ -240,60 +237,69 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
           <SectionHeader>Quem somos</SectionHeader>
           <Image
             src={PROPOSAL_ASSETS.irmenLogoLockup}
-            style={{ width: 170, height: 170 * (184 / 719), marginBottom: 16 }}
+            style={{ width: 150, height: 150 * (184 / 719), marginBottom: 10 }}
           />
           <Image src={PROPOSAL_ASSETS.quemSomosStats} style={{ width: CONTENT_W, height: CONTENT_W * (504 / 1200) }} />
+          <Image
+            src={PROPOSAL_ASSETS.facilityPhoto}
+            style={{ width: CONTENT_W, height: 95, objectFit: "cover", marginTop: 10 }}
+          />
         </View>
         <Footer clienteNome={data.clienteNome} />
       </Page>
 
-      {/* Uma página por item — título/modelo, fotos do Cadastro de Equipamentos e a
-          tabela de Principais Características (auto-preenchida a partir dos mesmos
-          "Campos" cadastrados no equipamento). */}
+      {/* Uma página por item — apresentação SANY (só no primeiro item), título/modelo,
+          foto(s) do Cadastro de Equipamentos ao lado da tabela de Principais
+          Características (auto-preenchida a partir dos mesmos "Campos" cadastrados no
+          equipamento). */}
       {data.items.map((item, index) => (
         <Page key={`item-${index}`} size="A4" style={styles.page}>
           <View style={styles.content}>
             <BrandLockup />
+
+            {index === 0 && (
+              <Image
+                src={PROPOSAL_ASSETS.sanyBrandBlock}
+                style={{ width: CONTENT_W, height: CONTENT_W * (509 / 1200), marginBottom: 18 }}
+              />
+            )}
+
             <SectionHeader>Equipamento ofertado</SectionHeader>
             <Text style={styles.equipTitle}>{item.object}</Text>
             {!!item.model && <Text style={styles.equipModel}>{item.model}</Text>}
 
-            {item.photos.length > 0 && (
-              <View style={styles.photosGrid}>
-                {item.photos.slice(0, 4).map((photo, photoIndex) => (
-                  <View key={photoIndex} style={styles.photoBox}>
-                    <Image src={photo} style={styles.photoImg} />
-                  </View>
+            <View style={{ flexDirection: "row" }}>
+              <View style={{ width: CONTENT_W / 2 - 8, marginRight: 16 }}>
+                {item.photos.slice(0, 2).map((photo, photoIndex) => (
+                  <Image
+                    key={photoIndex}
+                    src={photo}
+                    style={{
+                      width: CONTENT_W / 2 - 8,
+                      height: (CONTENT_W / 2 - 8) * 0.72,
+                      marginBottom: 8,
+                      objectFit: "cover",
+                    }}
+                  />
                 ))}
               </View>
-            )}
 
-            {item.specFields.length > 0 && (
-              <>
-                <SectionHeader>Principais características</SectionHeader>
-                <View style={styles.specTable}>
-                  {item.specFields.map((field, fieldIndex) => (
-                    <View key={fieldIndex} style={styles.specRow} wrap={false}>
-                      <Text style={styles.specLabelCell}>{field.label}</Text>
-                      <Text style={styles.specValueCell}>{field.value}</Text>
+              <View style={{ flex: 1 }}>
+                {item.specFields.length > 0 && (
+                  <>
+                    <SectionHeader>Principais características</SectionHeader>
+                    <View style={styles.specTable}>
+                      {item.specFields.map((field, fieldIndex) => (
+                        <View key={fieldIndex} style={styles.specRow} wrap={false}>
+                          <Text style={styles.specLabelCell}>{field.label}</Text>
+                          <Text style={styles.specValueCell}>{field.value}</Text>
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                </View>
-              </>
-            )}
-
-            {index === 0 && (
-              <View style={{ flexDirection: "row", marginTop: 6 }}>
-                <Image
-                  src={PROPOSAL_ASSETS.facilityPhoto}
-                  style={{ width: CONTENT_W / 2 - 6, height: (CONTENT_W / 2 - 6) * (471 / 1000), marginRight: 12 }}
-                />
-                <Image
-                  src={PROPOSAL_ASSETS.sanyBrandBlock}
-                  style={{ width: CONTENT_W / 2 - 6, height: (CONTENT_W / 2 - 6) * (509 / 1200) }}
-                />
+                  </>
+                )}
               </View>
-            )}
+            </View>
           </View>
           <Footer clienteNome={data.clienteNome} />
         </Page>
