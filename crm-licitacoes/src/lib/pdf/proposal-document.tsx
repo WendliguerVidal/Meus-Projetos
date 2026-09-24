@@ -115,10 +115,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   equipModel: { fontFamily: "Helvetica-Bold", fontSize: 10, color: COLOR.accent, marginBottom: 8 },
-  specTable: { marginBottom: 6 },
-  specRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.line },
-  specLabelCell: { width: 88, backgroundColor: COLOR.shade, padding: 3.5, fontFamily: "Helvetica-Bold", fontSize: 6.8 },
-  specValueCell: { flex: 1, padding: 3.5, fontSize: 6.8, color: COLOR.body },
   tableHeaderRow: { flexDirection: "row", backgroundColor: COLOR.ink },
   tableHeaderCell: {
     color: "#fff",
@@ -275,36 +271,18 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
               <Text style={styles.equipTitle}>{item.object}</Text>
               {!!item.model && <Text style={styles.equipModel}>{item.model}</Text>}
 
-              <View style={{ flexDirection: "row", marginBottom: 10 }}>
-                <View style={{ width: CONTENT_W / 2 - 8, marginRight: 16 }}>
-                  {item.photos.slice(0, 1).map((photo, photoIndex) => (
-                    <Image
-                      key={photoIndex}
-                      src={photo}
-                      style={{
-                        width: CONTENT_W / 2 - 8,
-                        height: (CONTENT_W / 2 - 8) * 0.62,
-                        objectFit: "cover",
-                      }}
-                    />
-                  ))}
-                </View>
-
-                <View style={{ flex: 1 }}>
-                  {item.specFields.length > 0 && (
-                    <>
-                      <SectionHeader>Principais características</SectionHeader>
-                      <View style={styles.specTable}>
-                        {item.specFields.map((field, fieldIndex) => (
-                          <View key={fieldIndex} style={styles.specRow} wrap={false}>
-                            <Text style={styles.specLabelCell}>{field.label}</Text>
-                            <Text style={styles.specValueCell}>{field.value}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    </>
-                  )}
-                </View>
+              <View style={{ width: CONTENT_W / 2 - 8, marginBottom: 10 }}>
+                {item.photos.slice(0, 1).map((photo, photoIndex) => (
+                  <Image
+                    key={photoIndex}
+                    src={photo}
+                    style={{
+                      width: CONTENT_W / 2 - 8,
+                      height: (CONTENT_W / 2 - 8) * 0.62,
+                      objectFit: "cover",
+                    }}
+                  />
+                ))}
               </View>
             </View>
           ))}
