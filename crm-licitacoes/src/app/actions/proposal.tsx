@@ -1,10 +1,17 @@
 "use server";
 
 import { renderToBuffer } from "@react-pdf/renderer";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser, assertCanAccessState } from "@/lib/rbac";
 import { toFriendlyErrorMessage, type ActionResult } from "@/lib/action-errors";
-import { generateProposalSchema, type GenerateProposalFormValues, type ProposalDefaults, type ProposalItemDefault } from "@/types/proposal";
+import {
+  generateProposalSchema,
+  type GenerateProposalFormValues,
+  type ProposalDefaults,
+  type ProposalItemDefault,
+  type SavedProposalListItem,
+} from "@/types/proposal";
 import { ProposalDocument, type ProposalDocumentItem } from "@/lib/pdf/proposal-document";
 
 export type { ActionResult };
@@ -223,13 +230,81 @@ export async function generateProposalPdf(
         .replace(/[^\p{L}\p{N}]+/gu, "-")
         .replace(/^-+|-+$/g, "")
         .slice(0, 60) || "proposta";
+    const fileName = `Proposta-Comercial-${safeClientSlug}.pdf`;
+    const base64 = pdfBuffer.toString("base64");
+
+    // Fica salva no processo — permite baixar de novo ou reabrir pré-preenchida para
+    // editar e reenviar (ver listProposalsForDeal/getSavedProposalPdf abaixo), sem perder
+    // o que já foi gerado antes. Mesmo padrão de armazenamento em base64 do Attachment/
+    // EquipmentFile (ver Proposal em schema.prisma).
+    await prisma.proposal.create({
+      data: {
+        dealId: data.dealId,
+        createdById: user.id,
+        fileName,
+        pdfData: `data:application/pdf;base64,${base64}`,
+        formData: data as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    return { success: true, data: { base64, fileName } };
+  } catch (err) {
+    console.error("[proposal] generateProposalPdf falhou:", err);
+    return { success: false, error: toFriendlyErrorMessage(err) };
+  }
+}
+
+/** Propostas já geradas e salvas para um processo, mais recentes primeiro — sem o PDF em
+ * si (mantém a resposta leve); ver getSavedProposalPdf para baixar uma sob demanda. */
+export async function listProposalsForDeal(dealId: string): Promise<ActionResult<SavedProposalListItem[]>> {
+  try {
+    const user = await requireUser();
+    const deal = await prisma.deal.findUniqueOrThrow({ where: { id: dealId }, select: { state: true } });
+    assertCanAccessState(user, deal.state);
+
+    const proposals = await prisma.proposal.findMany({
+      where: { dealId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        fileName: true,
+        createdAt: true,
+        formData: true,
+        createdBy: { select: { name: true } },
+      },
+    });
 
     return {
       success: true,
-      data: { base64: pdfBuffer.toString("base64"), fileName: `Proposta-Comercial-${safeClientSlug}.pdf` },
+      data: proposals.map((p) => ({
+        id: p.id,
+        fileName: p.fileName,
+        createdAt: p.createdAt.toISOString(),
+        createdByName: p.createdBy.name,
+        formData: p.formData as unknown as GenerateProposalFormValues,
+      })),
     };
   } catch (err) {
-    console.error("[proposal] generateProposalPdf falhou:", err);
+    console.error("[proposal] listProposalsForDeal falhou:", err);
+    return { success: false, error: toFriendlyErrorMessage(err) };
+  }
+}
+
+/** Baixa de novo uma proposta já gerada, sem regenerar o PDF — mesmo arquivo enviado na
+ * época. */
+export async function getSavedProposalPdf(id: string): Promise<ActionResult<{ base64: string; fileName: string }>> {
+  try {
+    const user = await requireUser();
+    const proposal = await prisma.proposal.findUniqueOrThrow({
+      where: { id },
+      include: { deal: { select: { state: true } } },
+    });
+    assertCanAccessState(user, proposal.deal.state);
+
+    const base64 = proposal.pdfData.split(",")[1] ?? proposal.pdfData;
+    return { success: true, data: { base64, fileName: proposal.fileName } };
+  } catch (err) {
+    console.error("[proposal] getSavedProposalPdf falhou:", err);
     return { success: false, error: toFriendlyErrorMessage(err) };
   }
 }

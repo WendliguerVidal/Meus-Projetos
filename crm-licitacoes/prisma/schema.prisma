@@ -40,6 +40,7 @@ model User {
   reminders     Reminder[] @relation("ReminderAssignedTo")
   auditLogs     AuditLog[]
   eventsCreated Event[]    @relation("EventCreatedBy")
+  proposals     Proposal[]
 
   @@map("users")
 }
@@ -86,6 +87,7 @@ model Deal {
   auditLogs   AuditLog[]
   events      Event[]
   items       DealItem[]
+  proposals   Proposal[]
 
   @@index([category])
   @@index([state])
@@ -156,6 +158,27 @@ model Attachment {
 
   @@index([dealId])
   @@map("attachments")
+}
+
+/// Proposta Comercial gerada (PDF) para um processo — fica salva para permitir baixar de
+/// novo, ou reabrir o formulário de geração pré-preenchido com os mesmos dados para editar
+/// e gerar uma nova versão, sem perder o que já foi enviado antes (ver generateProposalPdf
+/// em actions/proposal.tsx). `formData` guarda o payload completo (cabeçalho + itens) que
+/// alimentou essa geração; `pdfData` guarda o PDF em si, mesmo padrão de armazenamento em
+/// base64 do Attachment/EquipmentFile (sem depender de blob storage externo).
+model Proposal {
+  id          String   @id @default(cuid())
+  dealId      String
+  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  fileName    String
+  pdfData     String
+  formData    Json
+  createdAt   DateTime @default(now())
+
+  @@index([dealId])
+  @@map("proposals")
 }
 
 model AuditLog {

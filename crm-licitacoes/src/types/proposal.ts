@@ -64,3 +64,14 @@ export type ProposalDefaults = {
   consultorEmail: string;
   items: ProposalItemDefault[];
 };
+
+/** Uma proposta já gerada e salva (ver Proposal no schema.prisma) — listada no processo
+ * para permitir baixar de novo ou reabrir o formulário pré-preenchido para editar e gerar
+ * uma nova versão. `formData` é o payload completo que alimentou aquela geração. */
+export type SavedProposalListItem = {
+  id: string;
+  fileName: string;
+  createdAt: string;
+  createdByName: string;
+  formData: GenerateProposalFormValues;
+};

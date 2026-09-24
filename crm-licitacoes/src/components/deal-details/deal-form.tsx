@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { ComboboxInput } from "@/components/ui/combobox-input";
 import { GenerateProposalDialog } from "@/components/deal-details/generate-proposal-dialog";
+import { SavedProposalsList } from "@/components/deal-details/saved-proposals-list";
+import type { GenerateProposalFormValues } from "@/types/proposal";
 import {
   Select,
   SelectContent,
@@ -66,6 +68,7 @@ export function DealForm({
   const { data: users } = useAssignableUsers();
   const { data: equipmentList } = useEquipmentList();
   const [proposalOpen, setProposalOpen] = React.useState(false);
+  const [proposalInitialData, setProposalInitialData] = React.useState<GenerateProposalFormValues | null>(null);
 
   // Sugestões para Objeto/Equipamento e Modelo (Cadastro de Equipamentos) — a edição
   // manual livre continua 100% funcionando, isso só alimenta a "setinha" de sugestões.
@@ -392,11 +395,24 @@ export function DealForm({
           variant="outline"
           className="w-full gap-1.5"
           disabled={itemFields.length === 0}
-          onClick={() => setProposalOpen(true)}
+          onClick={() => {
+            setProposalInitialData(null);
+            setProposalOpen(true);
+          }}
         >
           <FileText className="h-4 w-4" />
           Gerar Proposta Comercial
         </Button>
+      )}
+
+      {dealId && (
+        <SavedProposalsList
+          dealId={dealId}
+          onEdit={(formData) => {
+            setProposalInitialData(formData);
+            setProposalOpen(true);
+          }}
+        />
       )}
 
       <Button type="submit" className="w-full" disabled={submitting}>
@@ -405,7 +421,12 @@ export function DealForm({
       </Button>
 
       {dealId && (
-        <GenerateProposalDialog dealId={dealId} open={proposalOpen} onOpenChange={setProposalOpen} />
+        <GenerateProposalDialog
+          dealId={dealId}
+          open={proposalOpen}
+          onOpenChange={setProposalOpen}
+          initialFormData={proposalInitialData}
+        />
       )}
     </form>
   );
