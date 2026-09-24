@@ -3,27 +3,35 @@ import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/render
 import { PROPOSAL_ASSETS } from "./proposal-assets";
 
 // ---------------------------------------------------------------------------
-// Documento da Proposta Comercial (PDF) — molde de "Nova_Proposta_Comercial_35U.docx":
-// capa, apresentação + dados do cliente, apresentação IRMEN, apresentação SANY, um bloco
-// por máquina (título/modelo/fotos), tabela de preços com o descritivo técnico dentro da
-// célula, condições comerciais, unidades/pós-venda e contato (com o consultor sobreposto).
-// As seis primeiras/últimas páginas são sempre as mesmas imagens fixas (ver proposal-
-// assets.ts); só o texto sobreposto e o bloco de cada item mudam por processo.
+// Documento da Proposta Comercial (PDF) — molde de
+// "Proposta-Comercial-Itarare-STG190C8.docx" (modelo aprovado pelo usuário), em 3
+// páginas fixas (como no original): (1) banner + dados do cliente/proponente + "Quem
+// somos" + foto da filial; (2) apresentação SANY + equipamento (foto/modelo/principais
+// características) + proposta de preço + condições comerciais; (3) estrutura/atendimento
+// + contato (consultor responsável). Fotos de cada máquina e a tabela de "Principais
+// Características" vêm do Cadastro de Equipamentos (ver actions/proposal.ts); as demais
+// imagens (banner, "quem somos", fachada da filial, apresentação SANY, infográfico de
+// estrutura/atendimento e QR) são fixas — ver proposal-assets.ts. Textos e tabelas usam
+// fontes/paddings compactos de propósito, para caber tudo nas mesmas 3 páginas do molde
+// mesmo com processos de vários itens.
 // ---------------------------------------------------------------------------
 
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
-const MARGIN = 40;
+const MARGIN = 36;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 
 const COLOR = {
-  ink2: "#1e2128",
+  ink: "#161616",
   text: "#22252b",
-  muted: "#6b6f7a",
-  accent: "#c81d15",
+  body: "#3a3a3a",
+  muted: "#6b6b6b",
+  accent: "#d71920",
   line: "#d8d5cd",
-  paperDim: "#f4f2ee",
+  shade: "#f3f3f3",
 };
+
+export type ProposalDocumentSpecField = { label: string; value: string };
 
 export type ProposalDocumentItem = {
   object: string;
@@ -34,6 +42,9 @@ export type ProposalDocumentItem = {
   descriptiveText: string;
   /** Data URIs (já vêm prontos de EquipmentFile.fileUrl) — até 4. */
   photos: string[];
+  /** "Características" do equipamento no Cadastro de Máquinas — vira a tabela de
+   * Principais Características (auto-preenchida, não editável nesta tela). */
+  specFields: ProposalDocumentSpecField[];
 };
 
 export type ProposalDocumentData = {
@@ -58,67 +69,101 @@ function formatBRL(value: number): string {
 }
 
 const styles = StyleSheet.create({
-  page: { fontFamily: "Helvetica", fontSize: 9.5, color: COLOR.text },
-  fullBleed: { width: PAGE_W, height: PAGE_H },
+  page: { fontFamily: "Helvetica", fontSize: 9, color: COLOR.text },
   content: { padding: MARGIN },
-  brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  brandIrmen: { fontFamily: "Helvetica-Bold", fontSize: 12, color: "#141517" },
-  brandSany: { fontFamily: "Helvetica-Bold", fontSize: 12, color: COLOR.accent, marginLeft: 8 },
+  brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  brandIrmen: { fontFamily: "Helvetica-Bold", fontSize: 10, color: "#141517" },
+  brandSany: { fontFamily: "Helvetica-Bold", fontSize: 10, color: COLOR.accent, marginLeft: 6 },
   footer: {
     position: "absolute",
-    bottom: 24,
+    bottom: 16,
+    left: MARGIN,
     right: MARGIN,
-    fontFamily: "Helvetica-Bold",
-    fontSize: 8,
-    color: "#b7b9be",
+    fontFamily: "Helvetica",
+    fontSize: 7,
+    color: "#9a9a9a",
+    textAlign: "center",
   },
-  irmenLetterhead: { fontSize: 11, color: COLOR.text, lineHeight: 1.5, marginBottom: 2 },
-  label: { fontFamily: "Helvetica-Bold", fontSize: 10.5, color: COLOR.text, marginBottom: 3 },
-  value: { fontSize: 13, color: COLOR.text, marginBottom: 12 },
-  paragraph: { fontSize: 11, color: "#3a3d44", lineHeight: 1.6, marginBottom: 18 },
-  equipTitle: { fontFamily: "Helvetica-Bold", fontSize: 20, color: COLOR.text, marginBottom: 2 },
-  equipModel: { fontFamily: "Helvetica-Bold", fontSize: 13, color: COLOR.accent, marginBottom: 16 },
-  photosGrid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -5 },
-  photoBox: { width: CONTENT_W / 2 - 10, height: (CONTENT_W / 2 - 10) * 0.75, margin: 5 },
-  photoImg: { width: "100%", height: "100%", objectFit: "cover" },
-  tableHeaderRow: { flexDirection: "row", backgroundColor: COLOR.ink2 },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "stretch", marginBottom: 3 },
+  sectionHeaderBar: { width: 3, backgroundColor: COLOR.accent, marginRight: 6 },
+  sectionHeaderText: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 9.5,
+    color: COLOR.text,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  hr: { borderBottomWidth: 1, borderBottomColor: COLOR.line },
+  headerBlockRow: { flexDirection: "row", paddingVertical: 5 },
+  headerBlockLabel: { fontFamily: "Helvetica-Bold", fontSize: 8, color: COLOR.text, marginBottom: 1 },
+  headerBlockValue: { fontSize: 8.5, color: COLOR.body, marginBottom: 2 },
+  proponenteLabel: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 7.5,
+    color: COLOR.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
+  proponenteLine: { fontSize: 8, color: COLOR.body, lineHeight: 1.4 },
+  paragraph: { fontSize: 8.5, color: COLOR.body, lineHeight: 1.35, marginBottom: 2 },
+  equipTitle: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 15,
+    color: COLOR.text,
+    marginBottom: 1,
+    textTransform: "uppercase",
+  },
+  equipModel: { fontFamily: "Helvetica-Bold", fontSize: 10, color: COLOR.accent, marginBottom: 8 },
+  specTable: { marginBottom: 6 },
+  specRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.line },
+  specLabelCell: { width: 88, backgroundColor: COLOR.shade, padding: 3.5, fontFamily: "Helvetica-Bold", fontSize: 6.8 },
+  specValueCell: { flex: 1, padding: 3.5, fontSize: 6.8, color: COLOR.body },
+  tableHeaderRow: { flexDirection: "row", backgroundColor: COLOR.ink },
   tableHeaderCell: {
     color: "#fff",
     fontFamily: "Helvetica-Bold",
-    fontSize: 8,
-    padding: 8,
+    fontSize: 6.8,
+    padding: 5,
     textTransform: "uppercase",
   },
   tableRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.line },
-  tableCell: { padding: 8, fontSize: 8.5 },
-  totalRow: { flexDirection: "row", backgroundColor: COLOR.paperDim, borderTopWidth: 2, borderTopColor: COLOR.ink2 },
-  totalCell: { padding: 8, fontSize: 9, fontFamily: "Helvetica-Bold" },
-  descrLabel: { fontFamily: "Helvetica-Bold", fontSize: 8.5, marginBottom: 4 },
-  condHeaderRow: { flexDirection: "row", backgroundColor: COLOR.ink2 },
+  tableCell: { padding: 5, fontSize: 7 },
+  totalRow: { flexDirection: "row", backgroundColor: COLOR.shade, borderTopWidth: 2, borderTopColor: COLOR.ink },
+  totalCell: { padding: 5, fontSize: 7.5, fontFamily: "Helvetica-Bold" },
+  totalCellValue: { padding: 5, fontSize: 8.5, fontFamily: "Helvetica-Bold", color: COLOR.accent },
+  descrLabel: { fontFamily: "Helvetica-Bold", fontSize: 7, marginBottom: 2 },
+  condHeaderRow: { flexDirection: "row", backgroundColor: COLOR.ink, marginTop: 8 },
   condHeaderCell: {
     color: "#fff",
     fontFamily: "Helvetica-Bold",
-    fontSize: 8,
-    padding: 8,
+    fontSize: 6.3,
+    padding: 5,
     textTransform: "uppercase",
   },
   condValueRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.line },
-  condValueCell: { padding: 9, fontSize: 9.5 },
-  consultantOverlay: { position: "absolute", top: 88, left: 48, width: 340 },
-  consultantName: { fontFamily: "Helvetica-Bold", fontSize: 21, marginBottom: 12, color: "#1c1e22" },
-  consultantLabel: {
-    fontFamily: "Helvetica-Bold",
-    fontSize: 13,
-    textTransform: "uppercase",
-    color: "#1c1e22",
-    marginTop: 11,
-  },
-  consultantValue: { fontSize: 14, color: "#3a3d44", lineHeight: 1.4 },
+  condValueCell: { padding: 5, fontSize: 7.3 },
+  consultantName: { fontFamily: "Helvetica-Bold", fontSize: 17, marginBottom: 3, color: "#1c1e22" },
+  consultantRole: { fontFamily: "Helvetica-Bold", fontSize: 10, color: COLOR.accent, marginBottom: 12 },
+  consultantLabel: { fontFamily: "Helvetica-Bold", fontSize: 8.5, color: COLOR.text, marginTop: 8, marginBottom: 2 },
+  consultantValue: { fontSize: 8.5, color: COLOR.body },
+  qrBadgeImg: { width: 100, height: 100 * (350 / 260) },
 });
 
-/** Coluna com largura fixa (soma ≈ CONTENT_W) reaproveitada nas tabelas de preços/
- * condições comerciais. */
-const COL = { descr: 237, qty: 77, unit: 100, total: 100 };
+/** Coluna com largura fixa (soma ≈ CONTENT_W) reaproveitada na tabela de preços. */
+const COL = { descr: 245, qty: 77, unit: 96, total: 105 };
+
+/** Dados fixos da IRMEN (proponente) — mesmos em toda proposta gerada. */
+const IRMEN_INFO = {
+  razaoSocial: "IRMEN MÁQUINAS E EQUIPAMENTOS",
+  cnpj: "10.657.159/0001-37",
+  filial: "Filial São Paulo",
+  endereco: "Rua Valença, nº 542 – B. Palmeiras de São José",
+  cep: "CEP 12.237-824 – São José dos Campos/SP",
+  site: "irmen.com.br",
+  linkedin: "/company/irmenmaquinas",
+  instagram: "@irmen_maquinas",
+};
 
 function BrandLockup() {
   return (
@@ -129,100 +174,142 @@ function BrandLockup() {
   );
 }
 
-function Footer({ fixed }: { fixed?: boolean }) {
+function SectionHeader({ children }: { children: string }) {
   return (
-    <Text style={styles.footer} fixed={fixed}>
-      irmen.com.br
-    </Text>
+    <View style={styles.sectionHeaderRow}>
+      <View style={styles.sectionHeaderBar} />
+      <Text style={styles.sectionHeaderText}>{children}</Text>
+    </View>
+  );
+}
+
+function Footer({ clienteNome }: { clienteNome: string }) {
+  return (
+    <Text
+      style={styles.footer}
+      fixed
+      render={({ pageNumber, totalPages }) =>
+        `IRMEN | SANY  •  irmen.com.br  •  Proposta Comercial – ${clienteNome}  •  Página ${pageNumber} de ${totalPages}`
+      }
+    />
   );
 }
 
 export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
   const totalGeral = data.items.reduce((sum, it) => sum + it.totalValue, 0);
+  const totalQuantidade = data.items.reduce((sum, it) => sum + it.quantity, 0);
+  const firstItem = data.items[0];
 
   return (
     <Document title="Proposta Comercial — IRMEN SANY">
-      {/* Página 1 — Capa (fixa) */}
-      <Page size="A4">
-        <Image src={PROPOSAL_ASSETS.cover} style={styles.fullBleed} />
-      </Page>
-
-      {/* Página 2 — Apresentação (foto + QR fixos) e Dados do Cliente (editável) */}
+      {/* Página 1 — Banner + dados do cliente/proponente + "Quem somos" + foto da filial */}
       <Page size="A4" style={styles.page}>
-        <View style={{ position: "relative" }}>
-          <Image src={PROPOSAL_ASSETS.introStrip} style={{ width: PAGE_W, height: PAGE_W / (1400 / 516) }} />
+        <Image src={PROPOSAL_ASSETS.heroBanner} style={{ width: PAGE_W, height: PAGE_W * (411 / 1400) }} />
+
+        <View style={styles.content}>
+          <View style={[styles.hr, styles.headerBlockRow]}>
+            <View style={{ flex: 1, paddingRight: 14 }}>
+              <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 13, marginBottom: 1 }}>PROPOSTA COMERCIAL</Text>
+              <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 9.5, color: COLOR.accent, marginBottom: 8 }}>
+                {data.dealTitle}
+              </Text>
+              <Text style={styles.headerBlockLabel}>Destinatário</Text>
+              <Text style={styles.headerBlockValue}>{data.clienteNome}</Text>
+              <Text style={styles.headerBlockLabel}>Data</Text>
+              <Text style={styles.headerBlockValue}>{data.dataProposta}</Text>
+              <Text style={styles.headerBlockLabel}>Validade</Text>
+              <Text style={[styles.headerBlockValue, { marginBottom: 0 }]}>{data.validadeProposta || "—"}</Text>
+            </View>
+            <View style={{ flex: 1, paddingLeft: 14, borderLeftWidth: 1, borderLeftColor: COLOR.line }}>
+              <Text style={styles.proponenteLabel}>Proponente</Text>
+              <Text style={[styles.proponenteLine, { fontFamily: "Helvetica-Bold", marginBottom: 2 }]}>
+                {IRMEN_INFO.razaoSocial}
+              </Text>
+              <Text style={styles.proponenteLine}>CNPJ: {IRMEN_INFO.cnpj}</Text>
+              <Text style={styles.proponenteLine}>{IRMEN_INFO.filial}</Text>
+              <Text style={styles.proponenteLine}>{IRMEN_INFO.endereco}</Text>
+              <Text style={styles.proponenteLine}>{IRMEN_INFO.cep}</Text>
+            </View>
+          </View>
+
+          <Text style={[styles.paragraph, { marginTop: 6 }]}>
+            Temos o prazer de apresentar uma breve introdução sobre a Irmen e as nossas condições comerciais
+            referentes ao {data.dealTitle}.
+          </Text>
+
+          <SectionHeader>Quem somos</SectionHeader>
           <Image
-            src={PROPOSAL_ASSETS.qrBadge}
-            style={{
-              position: "absolute",
-              right: PAGE_W * 0.05,
-              bottom: -28,
-              width: PAGE_W * 0.24,
-              height: (PAGE_W * 0.24) / (312 / 420),
-            }}
+            src={PROPOSAL_ASSETS.irmenLogoLockup}
+            style={{ width: 85, height: 85 * (184 / 719), marginBottom: 2 }}
+          />
+          <Image
+            src={PROPOSAL_ASSETS.quemSomosStats}
+            style={{ width: CONTENT_W * 0.92, height: CONTENT_W * 0.92 * (504 / 1200), alignSelf: "center" }}
+          />
+          <Image
+            src={PROPOSAL_ASSETS.facilityPhoto}
+            style={{ width: CONTENT_W * 0.85, height: CONTENT_W * 0.85 * (471 / 1000), marginTop: 4, alignSelf: "center" }}
           />
         </View>
-
-        <View style={{ padding: MARGIN, flex: 1 }}>
-          <Text style={styles.irmenLetterhead}>Empresa: IRMEN MAQUINAS E EQUIPAMENTOS</Text>
-          <Text style={styles.irmenLetterhead}>CNPJ: 10.657.159/0001-37</Text>
-          <Text style={styles.irmenLetterhead}>Filial – São Paulo</Text>
-          <Text style={[styles.irmenLetterhead, { marginBottom: 18 }]}>
-            Rua Valença, n° 542 B. Palmeiras de São José – CEP: 12.237-824 São Jose dos Campos
-          </Text>
-
-          <Text style={{ fontSize: 10.5, color: COLOR.muted, marginBottom: 6 }}>À</Text>
-          <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 15, marginBottom: 18 }}>{data.clienteNome}</Text>
-
-          <Text style={styles.paragraph}>
-            Temos o prazer de trazer uma breve introdução sobre a Irmen e apresentar as nossas condições
-            comerciais referentes ao {data.dealTitle}.
-          </Text>
-
-          <View style={{ marginTop: "auto" }}>
-            <Text style={styles.label}>Data</Text>
-            <Text style={styles.value}>{data.dataProposta}</Text>
-          </View>
-        </View>
-        <Footer />
+        <Footer clienteNome={data.clienteNome} />
       </Page>
 
-      {/* Página 3 — Apresentação IRMEN (fixa) */}
-      <Page size="A4">
-        <Image src={PROPOSAL_ASSETS.irmenPage} style={styles.fullBleed} />
-      </Page>
-
-      {/* Página 4 — Apresentação SANY (fixa) */}
-      <Page size="A4">
-        <Image src={PROPOSAL_ASSETS.sanyPage} style={styles.fullBleed} />
-      </Page>
-
-      {/* Uma página por item — título (preto) + modelo (vermelho) + até 4 fotos */}
-      {data.items.map((item, index) => (
-        <Page key={`item-${index}`} size="A4" style={styles.page}>
-          <View style={styles.content}>
-            <BrandLockup />
-            <Text style={styles.equipTitle}>{item.object}</Text>
-            {!!item.model && <Text style={styles.equipModel}>{item.model}</Text>}
-            {item.photos.length > 0 && (
-              <View style={styles.photosGrid}>
-                {item.photos.slice(0, 4).map((photo, photoIndex) => (
-                  <View key={photoIndex} style={styles.photoBox}>
-                    <Image src={photo} style={styles.photoImg} />
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-          <Footer />
-        </Page>
-      ))}
-
-      {/* Tabela de Preços — descritivo técnico dentro da própria célula, um bloco por
-          página inicial; itens/linhas extras fluem automaticamente para novas páginas. */}
+      {/* Página 2 — apresentação SANY, equipamento (foto + principais características) e,
+          logo abaixo, a proposta de preço e as condições comerciais. Quando o processo
+          tem mais de um item, cada item extra ganha sua própria foto/tabela antes da
+          proposta de preço; a apresentação SANY aparece só uma vez. */}
       <Page size="A4" style={styles.page}>
         <View style={styles.content}>
           <BrandLockup />
+
+          {!!firstItem && (
+            <Image
+              src={PROPOSAL_ASSETS.sanyBrandBlock}
+              style={{ width: CONTENT_W, height: CONTENT_W * (509 / 1200), marginBottom: 10 }}
+            />
+          )}
+
+          {data.items.map((item, index) => (
+            <View key={index} wrap={false}>
+              <SectionHeader>{index === 0 ? "Equipamento ofertado" : `Equipamento ofertado ${index + 1}`}</SectionHeader>
+              <Text style={styles.equipTitle}>{item.object}</Text>
+              {!!item.model && <Text style={styles.equipModel}>{item.model}</Text>}
+
+              <View style={{ flexDirection: "row", marginBottom: 10 }}>
+                <View style={{ width: CONTENT_W / 2 - 8, marginRight: 16 }}>
+                  {item.photos.slice(0, 1).map((photo, photoIndex) => (
+                    <Image
+                      key={photoIndex}
+                      src={photo}
+                      style={{
+                        width: CONTENT_W / 2 - 8,
+                        height: (CONTENT_W / 2 - 8) * 0.62,
+                        objectFit: "cover",
+                      }}
+                    />
+                  ))}
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  {item.specFields.length > 0 && (
+                    <>
+                      <SectionHeader>Principais características</SectionHeader>
+                      <View style={styles.specTable}>
+                        {item.specFields.map((field, fieldIndex) => (
+                          <View key={fieldIndex} style={styles.specRow} wrap={false}>
+                            <Text style={styles.specLabelCell}>{field.label}</Text>
+                            <Text style={styles.specValueCell}>{field.value}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  )}
+                </View>
+              </View>
+            </View>
+          ))}
+
+          <SectionHeader>Proposta de preço</SectionHeader>
 
           <View style={styles.tableHeaderRow} fixed>
             <Text style={[styles.tableHeaderCell, { width: COL.descr }]}>Descritivo</Text>
@@ -238,9 +325,7 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
                   {item.object.toUpperCase()}
                   {item.model ? ` ${item.model.toUpperCase()}` : ""}
                 </Text>
-                <Text style={{ fontSize: 8, lineHeight: 1.5, color: "#3a3d44" }}>
-                  {item.descriptiveText || "—"}
-                </Text>
+                <Text style={{ fontSize: 6.5, lineHeight: 1.35, color: COLOR.body }}>{item.descriptiveText || "—"}</Text>
               </View>
               <Text style={[styles.tableCell, { width: COL.qty }]}>{item.quantity}</Text>
               <Text style={[styles.tableCell, { width: COL.unit }]}>{formatBRL(item.unitValue)}</Text>
@@ -249,88 +334,96 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
           ))}
 
           <View style={styles.totalRow}>
-            <Text style={[styles.totalCell, { width: COL.descr + COL.qty + COL.unit }]}>Total</Text>
-            <Text style={[styles.totalCell, { width: COL.total }]}>{formatBRL(totalGeral)}</Text>
+            <Text style={[styles.totalCell, { width: COL.descr + COL.qty + COL.unit }]}>Valor Total</Text>
+            <Text style={[styles.totalCellValue, { width: COL.total }]}>{formatBRL(totalGeral)}</Text>
+          </View>
+
+          <View style={styles.condHeaderRow}>
+            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 4 }]}>Classificação Fiscal</Text>
+            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 4 }]}>Alíquota de ICMS</Text>
+            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 4 }]}>Condição de Pagamento</Text>
+            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 4 }]}>Garantia</Text>
+          </View>
+          <View style={styles.condValueRow}>
+            <Text style={[styles.condValueCell, { width: CONTENT_W / 4, color: COLOR.muted, fontStyle: "italic" }]}>
+              Conforme NCM do item
+            </Text>
+            <Text style={[styles.condValueCell, { width: CONTENT_W / 4 }]}>{data.aliquotaIcms || "—"}</Text>
+            <Text style={[styles.condValueCell, { width: CONTENT_W / 4 }]}>{data.condicoesPagamento || "—"}</Text>
+            <Text style={[styles.condValueCell, { width: CONTENT_W / 4 }]}>{data.prazoGarantia || "—"}</Text>
+          </View>
+
+          <View style={styles.condHeaderRow}>
+            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 4 }]}>Local de Entrega</Text>
+            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 4 }]}>Prazo de Entrega</Text>
+            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 4 }]}>Validade da Proposta</Text>
+            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 4 }]}>Quantidade</Text>
+          </View>
+          <View style={styles.condValueRow}>
+            <Text style={[styles.condValueCell, { width: CONTENT_W / 4 }]}>{data.localEntrega || "—"}</Text>
+            <Text style={[styles.condValueCell, { width: CONTENT_W / 4 }]}>{data.prazoEntrega || "—"}</Text>
+            <Text style={[styles.condValueCell, { width: CONTENT_W / 4 }]}>{data.validadeProposta || "—"}</Text>
+            <Text style={[styles.condValueCell, { width: CONTENT_W / 4 }]}>
+              {totalQuantidade} {totalQuantidade === 1 ? "unidade" : "unidades"}
+            </Text>
           </View>
         </View>
-        <Footer fixed />
+        <Footer clienteNome={data.clienteNome} />
       </Page>
 
-      {/* Condições Comerciais — mesmo formato de tabela, continuação da anterior */}
+      {/* Página 3 — Estrutura e Atendimento + Consultora Responsável (contato) */}
       <Page size="A4" style={styles.page}>
         <View style={styles.content}>
           <BrandLockup />
+          <SectionHeader>Estrutura e atendimento</SectionHeader>
+          <Image
+            src={PROPOSAL_ASSETS.estruturaAtendimento}
+            style={{ width: CONTENT_W, height: CONTENT_W * (842 / 1200), marginBottom: 22 }}
+          />
 
-          <View style={styles.condHeaderRow}>
-            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 2 }]}>Classificação Fiscal</Text>
-            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 2 }]}>Alíquota de ICMS</Text>
-          </View>
-          <View style={styles.condValueRow}>
-            <Text style={[styles.condValueCell, { width: CONTENT_W / 2, color: COLOR.muted, fontStyle: "italic" }]}>
-              Conforme NCM do item
-            </Text>
-            <Text style={[styles.condValueCell, { width: CONTENT_W / 2 }]}>{data.aliquotaIcms || "—"}</Text>
-          </View>
+          <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.proponenteLabel}>Consultora Responsável</Text>
+              <Text style={styles.consultantName}>{data.consultorNome}</Text>
+              <Text style={styles.consultantRole}>
+                {data.consultorCargo || "Consultor"} – IRMEN/SANY
+              </Text>
 
-          <View style={styles.condHeaderRow}>
-            <Text style={[styles.condHeaderCell, { width: CONTENT_W }]}>Condições de Pagamento</Text>
-          </View>
-          <View style={styles.condValueRow}>
-            <Text style={[styles.condValueCell, { width: CONTENT_W }]}>{data.condicoesPagamento || "—"}</Text>
-          </View>
+              {!!data.consultorEmail && (
+                <Text style={styles.consultantValue}>
+                  <Text style={{ fontFamily: "Helvetica-Bold" }}>E-mail: </Text>
+                  {data.consultorEmail}
+                </Text>
+              )}
+              {!!data.consultorContato && (
+                <Text style={[styles.consultantValue, { marginTop: 3 }]}>
+                  <Text style={{ fontFamily: "Helvetica-Bold" }}>Telefone: </Text>
+                  {data.consultorContato}
+                </Text>
+              )}
+              <Text style={[styles.consultantValue, { marginTop: 3 }]}>
+                <Text style={{ fontFamily: "Helvetica-Bold" }}>Site: </Text>
+                {IRMEN_INFO.site}
+              </Text>
+              <Text style={[styles.consultantValue, { marginTop: 3 }]}>
+                <Text style={{ fontFamily: "Helvetica-Bold" }}>LinkedIn: </Text>
+                {IRMEN_INFO.linkedin}
+              </Text>
+              <Text style={[styles.consultantValue, { marginTop: 3 }]}>
+                <Text style={{ fontFamily: "Helvetica-Bold" }}>Instagram: </Text>
+                {IRMEN_INFO.instagram}
+              </Text>
+            </View>
 
-          <View style={styles.condHeaderRow}>
-            <Text style={[styles.condHeaderCell, { width: CONTENT_W }]}>Garantia</Text>
-          </View>
-          <View style={styles.condValueRow}>
-            <Text style={[styles.condValueCell, { width: CONTENT_W }]}>{data.prazoGarantia || "—"}</Text>
-          </View>
-
-          <View style={styles.condHeaderRow}>
-            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 2 }]}>Local de Entrega</Text>
-            <Text style={[styles.condHeaderCell, { width: CONTENT_W / 2 }]}>Prazo de Entrega</Text>
-          </View>
-          <View style={styles.condValueRow}>
-            <Text style={[styles.condValueCell, { width: CONTENT_W / 2 }]}>{data.localEntrega || "—"}</Text>
-            <Text style={[styles.condValueCell, { width: CONTENT_W / 2 }]}>{data.prazoEntrega || "—"}</Text>
-          </View>
-
-          <View style={styles.condHeaderRow}>
-            <Text style={[styles.condHeaderCell, { width: CONTENT_W }]}>Validade da Proposta</Text>
-          </View>
-          <View style={styles.condValueRow}>
-            <Text style={[styles.condValueCell, { width: CONTENT_W }]}>{data.validadeProposta || "—"}</Text>
+            <Image src={PROPOSAL_ASSETS.qrBadge} style={styles.qrBadgeImg} />
           </View>
         </View>
-        <Footer />
-      </Page>
 
-      {/* Unidades + Pós-venda (fixa) */}
-      <Page size="A4">
-        <Image src={PROPOSAL_ASSETS.unitsPostSale} style={styles.fullBleed} />
-      </Page>
-
-      {/* Contato/QR (fixa) + dados de quem está enviando a proposta (editável por
-          geração — muda conforme o processo: coordenadora, outro consultor etc.) */}
-      <Page size="A4">
-        <View style={{ position: "relative" }}>
-          <Image src={PROPOSAL_ASSETS.contactPage} style={styles.fullBleed} />
-          <View style={styles.consultantOverlay}>
-            <Text style={styles.consultantName}>{data.consultorNome.toUpperCase()}</Text>
-            {!!data.consultorCargo && <Text style={styles.consultantLabel}>{data.consultorCargo}</Text>}
-            {!!data.consultorContato && (
-              <>
-                <Text style={styles.consultantLabel}>Contato</Text>
-                <Text style={styles.consultantValue}>{data.consultorContato}</Text>
-              </>
-            )}
-            {!!data.consultorEmail && (
-              <>
-                <Text style={styles.consultantLabel}>Email</Text>
-                <Text style={styles.consultantValue}>{data.consultorEmail}</Text>
-              </>
-            )}
-          </View>
+        <View style={{ position: "absolute", bottom: 26, left: 0, right: 0, alignItems: "center" }}>
+          <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 7.5, color: COLOR.text }}>
+            {IRMEN_INFO.razaoSocial}
+          </Text>
+          <Text style={{ fontSize: 7, color: COLOR.muted, marginTop: 2 }}>CNPJ {IRMEN_INFO.cnpj}</Text>
         </View>
       </Page>
     </Document>

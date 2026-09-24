@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { useProposalDefaults, useGenerateProposalPdf } from "@/hooks/use-proposal";
+import type { GenerateProposalFormValues } from "@/types/proposal";
 
 type ItemFormState = {
   dealItemId: string;
@@ -37,10 +38,15 @@ export function GenerateProposalDialog({
   dealId,
   open,
   onOpenChange,
+  initialFormData,
 }: {
   dealId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Dados de uma proposta já gerada anteriormente (ver SavedProposalsList "Editar e
+   * reenviar") — sobrepõem as sugestões padrão ao abrir, para o usuário ajustar e gerar
+   * uma nova versão em vez de partir do zero. */
+  initialFormData?: GenerateProposalFormValues | null;
 }) {
   const { mutate: loadDefaults, isPending: loading } = useProposalDefaults();
   const { mutate: generate, isPending: generating } = useGenerateProposalPdf();
@@ -68,35 +74,45 @@ export function GenerateProposalDialog({
     setItems([]);
     loadDefaults(dealId, {
       onSuccess: (data) => {
-        setDataProposta(data.dataProposta);
-        setClienteNome(data.clienteNome);
-        setLocalEntrega(data.localEntrega);
-        setAliquotaIcms("");
-        setCondicoesPagamento("");
-        setPrazoGarantia("");
-        setPrazoEntrega("");
-        setValidadeProposta("60 dias");
-        setConsultorNome(data.consultorNome);
-        setConsultorCargo("Consultor");
-        setConsultorContato("");
-        setConsultorEmail(data.consultorEmail);
+        // Sem proposta anterior selecionada, usa as sugestões normais. Reaberto a partir
+        // de "Editar e reenviar" (ver SavedProposalsList), sobrepõe com o que foi
+        // preenchido naquela geração — mas o objeto/modelo/quantidade/fotos de cada item
+        // sempre vêm frescos do processo/Cadastro de Equipamentos, caso tenham mudado
+        // desde então.
+        setDataProposta(initialFormData?.dataProposta ?? data.dataProposta);
+        setClienteNome(initialFormData?.clienteNome ?? data.clienteNome);
+        setLocalEntrega(initialFormData?.localEntrega ?? data.localEntrega);
+        setAliquotaIcms(initialFormData?.aliquotaIcms ?? "");
+        setCondicoesPagamento(initialFormData?.condicoesPagamento ?? "");
+        setPrazoGarantia(initialFormData?.prazoGarantia ?? "");
+        setPrazoEntrega(initialFormData?.prazoEntrega ?? "");
+        setValidadeProposta(initialFormData?.validadeProposta ?? "60 dias");
+        setConsultorNome(initialFormData?.consultorNome ?? data.consultorNome);
+        setConsultorCargo(initialFormData?.consultorCargo ?? "Consultor");
+        setConsultorContato(initialFormData?.consultorContato ?? "");
+        setConsultorEmail(initialFormData?.consultorEmail ?? data.consultorEmail);
+
+        const overrideItems = new Map((initialFormData?.items ?? []).map((it) => [it.dealItemId, it]));
         setItems(
-          data.items.map((it) => ({
-            dealItemId: it.dealItemId,
-            object: it.object,
-            model: it.model,
-            quantity: it.quantity,
-            descriptiveText: it.suggestedDescriptiveText,
-            unitValue: it.suggestedUnitValue,
-            totalValue: it.suggestedTotalValue,
-            photoCount: it.photoCount,
-          }))
+          data.items.map((it) => {
+            const override = overrideItems.get(it.dealItemId);
+            return {
+              dealItemId: it.dealItemId,
+              object: it.object,
+              model: it.model,
+              quantity: it.quantity,
+              descriptiveText: override?.descriptiveText ?? it.suggestedDescriptiveText,
+              unitValue: override?.unitValue ?? it.suggestedUnitValue,
+              totalValue: override?.totalValue ?? it.suggestedTotalValue,
+              photoCount: it.photoCount,
+            };
+          })
         );
       },
       onError: () => setLoadError(true),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, dealId]);
+  }, [open, dealId, initialFormData]);
 
   const updateItem = (index: number, patch: Partial<ItemFormState>) => {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)));
