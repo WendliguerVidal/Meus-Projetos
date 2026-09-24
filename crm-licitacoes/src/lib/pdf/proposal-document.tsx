@@ -4,19 +4,21 @@ import { PROPOSAL_ASSETS } from "./proposal-assets";
 
 // ---------------------------------------------------------------------------
 // Documento da Proposta Comercial (PDF) — molde de
-// "Proposta-Comercial-Itarare-STG190C8.docx" (modelo aprovado pelo usuário): banner +
-// dados do cliente/proponente, "Quem somos", um bloco por máquina (título/modelo/fotos/
-// principais características), tabela de preços com o descritivo técnico dentro da
-// própria célula, condições comerciais, estrutura/atendimento e contato (consultor
-// responsável). Fotos de cada máquina e a tabela de "Principais Características" vêm do
-// Cadastro de Equipamentos (ver actions/proposal.ts); as demais imagens (banner, "quem
-// somos", fachada da filial, apresentação SANY, infográfico de estrutura/atendimento e QR)
-// são fixas — ver proposal-assets.ts.
+// "Proposta-Comercial-Itarare-STG190C8.docx" (modelo aprovado pelo usuário), em 3
+// páginas fixas (como no original): (1) banner + dados do cliente/proponente + "Quem
+// somos" + foto da filial; (2) apresentação SANY + equipamento (foto/modelo/principais
+// características) + proposta de preço + condições comerciais; (3) estrutura/atendimento
+// + contato (consultor responsável). Fotos de cada máquina e a tabela de "Principais
+// Características" vêm do Cadastro de Equipamentos (ver actions/proposal.ts); as demais
+// imagens (banner, "quem somos", fachada da filial, apresentação SANY, infográfico de
+// estrutura/atendimento e QR) são fixas — ver proposal-assets.ts. Textos e tabelas usam
+// fontes/paddings compactos de propósito, para caber tudo nas mesmas 3 páginas do molde
+// mesmo com processos de vários itens.
 // ---------------------------------------------------------------------------
 
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
-const MARGIN = 40;
+const MARGIN = 36;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 
 const COLOR = {
@@ -67,89 +69,89 @@ function formatBRL(value: number): string {
 }
 
 const styles = StyleSheet.create({
-  page: { fontFamily: "Helvetica", fontSize: 9.5, color: COLOR.text },
+  page: { fontFamily: "Helvetica", fontSize: 9, color: COLOR.text },
   content: { padding: MARGIN },
-  brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  brandIrmen: { fontFamily: "Helvetica-Bold", fontSize: 12, color: "#141517" },
-  brandSany: { fontFamily: "Helvetica-Bold", fontSize: 12, color: COLOR.accent, marginLeft: 8 },
+  brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  brandIrmen: { fontFamily: "Helvetica-Bold", fontSize: 10, color: "#141517" },
+  brandSany: { fontFamily: "Helvetica-Bold", fontSize: 10, color: COLOR.accent, marginLeft: 6 },
   footer: {
     position: "absolute",
-    bottom: 22,
+    bottom: 16,
     left: MARGIN,
     right: MARGIN,
     fontFamily: "Helvetica",
-    fontSize: 7.5,
+    fontSize: 7,
     color: "#9a9a9a",
     textAlign: "center",
   },
-  sectionHeaderRow: { flexDirection: "row", alignItems: "stretch", marginBottom: 8, marginTop: 2 },
-  sectionHeaderBar: { width: 3, backgroundColor: COLOR.accent, marginRight: 8 },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "stretch", marginBottom: 3 },
+  sectionHeaderBar: { width: 3, backgroundColor: COLOR.accent, marginRight: 6 },
   sectionHeaderText: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 11.5,
+    fontSize: 9.5,
     color: COLOR.text,
     textTransform: "uppercase",
     letterSpacing: 0.3,
   },
   hr: { borderBottomWidth: 1, borderBottomColor: COLOR.line },
-  headerBlockRow: { flexDirection: "row", paddingVertical: 10 },
-  headerBlockLabel: { fontFamily: "Helvetica-Bold", fontSize: 9, color: COLOR.text, marginBottom: 1 },
-  headerBlockValue: { fontSize: 9.5, color: COLOR.body, marginBottom: 5 },
+  headerBlockRow: { flexDirection: "row", paddingVertical: 5 },
+  headerBlockLabel: { fontFamily: "Helvetica-Bold", fontSize: 8, color: COLOR.text, marginBottom: 1 },
+  headerBlockValue: { fontSize: 8.5, color: COLOR.body, marginBottom: 2 },
   proponenteLabel: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 8,
+    fontSize: 7.5,
     color: COLOR.muted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 3,
   },
-  proponenteLine: { fontSize: 9, color: COLOR.body, lineHeight: 1.5 },
-  paragraph: { fontSize: 10, color: COLOR.body, lineHeight: 1.5, marginBottom: 10 },
+  proponenteLine: { fontSize: 8, color: COLOR.body, lineHeight: 1.4 },
+  paragraph: { fontSize: 8.5, color: COLOR.body, lineHeight: 1.35, marginBottom: 2 },
   equipTitle: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 19,
+    fontSize: 15,
     color: COLOR.text,
-    marginBottom: 2,
+    marginBottom: 1,
     textTransform: "uppercase",
   },
-  equipModel: { fontFamily: "Helvetica-Bold", fontSize: 12.5, color: COLOR.accent, marginBottom: 14 },
-  specTable: { marginBottom: 14 },
+  equipModel: { fontFamily: "Helvetica-Bold", fontSize: 10, color: COLOR.accent, marginBottom: 8 },
+  specTable: { marginBottom: 6 },
   specRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.line },
-  specLabelCell: { width: 95, backgroundColor: COLOR.shade, padding: 6, fontFamily: "Helvetica-Bold", fontSize: 7.5 },
-  specValueCell: { flex: 1, padding: 6, fontSize: 7.5, color: COLOR.body },
+  specLabelCell: { width: 88, backgroundColor: COLOR.shade, padding: 3.5, fontFamily: "Helvetica-Bold", fontSize: 6.8 },
+  specValueCell: { flex: 1, padding: 3.5, fontSize: 6.8, color: COLOR.body },
   tableHeaderRow: { flexDirection: "row", backgroundColor: COLOR.ink },
   tableHeaderCell: {
     color: "#fff",
     fontFamily: "Helvetica-Bold",
-    fontSize: 8,
-    padding: 8,
+    fontSize: 6.8,
+    padding: 5,
     textTransform: "uppercase",
   },
   tableRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.line },
-  tableCell: { padding: 8, fontSize: 8.5 },
+  tableCell: { padding: 5, fontSize: 7 },
   totalRow: { flexDirection: "row", backgroundColor: COLOR.shade, borderTopWidth: 2, borderTopColor: COLOR.ink },
-  totalCell: { padding: 8, fontSize: 9, fontFamily: "Helvetica-Bold" },
-  totalCellValue: { padding: 8, fontSize: 10, fontFamily: "Helvetica-Bold", color: COLOR.accent },
-  descrLabel: { fontFamily: "Helvetica-Bold", fontSize: 8.5, marginBottom: 4 },
-  condHeaderRow: { flexDirection: "row", backgroundColor: COLOR.ink, marginTop: 14 },
+  totalCell: { padding: 5, fontSize: 7.5, fontFamily: "Helvetica-Bold" },
+  totalCellValue: { padding: 5, fontSize: 8.5, fontFamily: "Helvetica-Bold", color: COLOR.accent },
+  descrLabel: { fontFamily: "Helvetica-Bold", fontSize: 7, marginBottom: 2 },
+  condHeaderRow: { flexDirection: "row", backgroundColor: COLOR.ink, marginTop: 8 },
   condHeaderCell: {
     color: "#fff",
     fontFamily: "Helvetica-Bold",
-    fontSize: 7.5,
-    padding: 8,
+    fontSize: 6.3,
+    padding: 5,
     textTransform: "uppercase",
   },
   condValueRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: COLOR.line },
-  condValueCell: { padding: 9, fontSize: 9 },
-  consultantName: { fontFamily: "Helvetica-Bold", fontSize: 19, marginBottom: 4, color: "#1c1e22" },
-  consultantRole: { fontFamily: "Helvetica-Bold", fontSize: 11, color: COLOR.accent, marginBottom: 16 },
-  consultantLabel: { fontFamily: "Helvetica-Bold", fontSize: 9, color: COLOR.text, marginTop: 9, marginBottom: 2 },
-  consultantValue: { fontSize: 9.5, color: COLOR.body },
-  qrBadgeImg: { width: 108, height: 108 * (350 / 260) },
+  condValueCell: { padding: 5, fontSize: 7.3 },
+  consultantName: { fontFamily: "Helvetica-Bold", fontSize: 17, marginBottom: 3, color: "#1c1e22" },
+  consultantRole: { fontFamily: "Helvetica-Bold", fontSize: 10, color: COLOR.accent, marginBottom: 12 },
+  consultantLabel: { fontFamily: "Helvetica-Bold", fontSize: 8.5, color: COLOR.text, marginTop: 8, marginBottom: 2 },
+  consultantValue: { fontSize: 8.5, color: COLOR.body },
+  qrBadgeImg: { width: 100, height: 100 * (350 / 260) },
 });
 
 /** Coluna com largura fixa (soma ≈ CONTENT_W) reaproveitada na tabela de preços. */
-const COL = { descr: 237, qty: 77, unit: 100, total: 100 };
+const COL = { descr: 245, qty: 77, unit: 96, total: 105 };
 
 /** Dados fixos da IRMEN (proponente) — mesmos em toda proposta gerada. */
 const IRMEN_INFO = {
@@ -196,18 +198,19 @@ function Footer({ clienteNome }: { clienteNome: string }) {
 export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
   const totalGeral = data.items.reduce((sum, it) => sum + it.totalValue, 0);
   const totalQuantidade = data.items.reduce((sum, it) => sum + it.quantity, 0);
+  const firstItem = data.items[0];
 
   return (
     <Document title="Proposta Comercial — IRMEN SANY">
-      {/* Página 1 — Banner + dados do cliente/proponente + "Quem somos" */}
+      {/* Página 1 — Banner + dados do cliente/proponente + "Quem somos" + foto da filial */}
       <Page size="A4" style={styles.page}>
         <Image src={PROPOSAL_ASSETS.heroBanner} style={{ width: PAGE_W, height: PAGE_W * (411 / 1400) }} />
 
         <View style={styles.content}>
           <View style={[styles.hr, styles.headerBlockRow]}>
-            <View style={{ flex: 1, paddingRight: 16 }}>
-              <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 15, marginBottom: 2 }}>PROPOSTA COMERCIAL</Text>
-              <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 10.5, color: COLOR.accent, marginBottom: 12 }}>
+            <View style={{ flex: 1, paddingRight: 14 }}>
+              <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 13, marginBottom: 1 }}>PROPOSTA COMERCIAL</Text>
+              <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 9.5, color: COLOR.accent, marginBottom: 8 }}>
                 {data.dealTitle}
               </Text>
               <Text style={styles.headerBlockLabel}>Destinatário</Text>
@@ -217,9 +220,9 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
               <Text style={styles.headerBlockLabel}>Validade</Text>
               <Text style={[styles.headerBlockValue, { marginBottom: 0 }]}>{data.validadeProposta || "—"}</Text>
             </View>
-            <View style={{ flex: 1, paddingLeft: 16, borderLeftWidth: 1, borderLeftColor: COLOR.line }}>
+            <View style={{ flex: 1, paddingLeft: 14, borderLeftWidth: 1, borderLeftColor: COLOR.line }}>
               <Text style={styles.proponenteLabel}>Proponente</Text>
-              <Text style={[styles.proponenteLine, { fontFamily: "Helvetica-Bold", marginBottom: 3 }]}>
+              <Text style={[styles.proponenteLine, { fontFamily: "Helvetica-Bold", marginBottom: 2 }]}>
                 {IRMEN_INFO.razaoSocial}
               </Text>
               <Text style={styles.proponenteLine}>CNPJ: {IRMEN_INFO.cnpj}</Text>
@@ -229,7 +232,7 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
             </View>
           </View>
 
-          <Text style={[styles.paragraph, { marginTop: 12 }]}>
+          <Text style={[styles.paragraph, { marginTop: 6 }]}>
             Temos o prazer de apresentar uma breve introdução sobre a Irmen e as nossas condições comerciais
             referentes ao {data.dealTitle}.
           </Text>
@@ -237,78 +240,75 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
           <SectionHeader>Quem somos</SectionHeader>
           <Image
             src={PROPOSAL_ASSETS.irmenLogoLockup}
-            style={{ width: 150, height: 150 * (184 / 719), marginBottom: 10 }}
+            style={{ width: 85, height: 85 * (184 / 719), marginBottom: 2 }}
           />
-          <Image src={PROPOSAL_ASSETS.quemSomosStats} style={{ width: CONTENT_W, height: CONTENT_W * (504 / 1200) }} />
+          <Image
+            src={PROPOSAL_ASSETS.quemSomosStats}
+            style={{ width: CONTENT_W * 0.92, height: CONTENT_W * 0.92 * (504 / 1200), alignSelf: "center" }}
+          />
           <Image
             src={PROPOSAL_ASSETS.facilityPhoto}
-            style={{ width: CONTENT_W, height: 95, objectFit: "cover", marginTop: 10 }}
+            style={{ width: CONTENT_W * 0.85, height: CONTENT_W * 0.85 * (471 / 1000), marginTop: 4, alignSelf: "center" }}
           />
         </View>
         <Footer clienteNome={data.clienteNome} />
       </Page>
 
-      {/* Uma página por item — apresentação SANY (só no primeiro item), título/modelo,
-          foto(s) do Cadastro de Equipamentos ao lado da tabela de Principais
-          Características (auto-preenchida a partir dos mesmos "Campos" cadastrados no
-          equipamento). */}
-      {data.items.map((item, index) => (
-        <Page key={`item-${index}`} size="A4" style={styles.page}>
-          <View style={styles.content}>
-            <BrandLockup />
-
-            {index === 0 && (
-              <Image
-                src={PROPOSAL_ASSETS.sanyBrandBlock}
-                style={{ width: CONTENT_W, height: CONTENT_W * (509 / 1200), marginBottom: 18 }}
-              />
-            )}
-
-            <SectionHeader>Equipamento ofertado</SectionHeader>
-            <Text style={styles.equipTitle}>{item.object}</Text>
-            {!!item.model && <Text style={styles.equipModel}>{item.model}</Text>}
-
-            <View style={{ flexDirection: "row" }}>
-              <View style={{ width: CONTENT_W / 2 - 8, marginRight: 16 }}>
-                {item.photos.slice(0, 2).map((photo, photoIndex) => (
-                  <Image
-                    key={photoIndex}
-                    src={photo}
-                    style={{
-                      width: CONTENT_W / 2 - 8,
-                      height: (CONTENT_W / 2 - 8) * 0.72,
-                      marginBottom: 8,
-                      objectFit: "cover",
-                    }}
-                  />
-                ))}
-              </View>
-
-              <View style={{ flex: 1 }}>
-                {item.specFields.length > 0 && (
-                  <>
-                    <SectionHeader>Principais características</SectionHeader>
-                    <View style={styles.specTable}>
-                      {item.specFields.map((field, fieldIndex) => (
-                        <View key={fieldIndex} style={styles.specRow} wrap={false}>
-                          <Text style={styles.specLabelCell}>{field.label}</Text>
-                          <Text style={styles.specValueCell}>{field.value}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </>
-                )}
-              </View>
-            </View>
-          </View>
-          <Footer clienteNome={data.clienteNome} />
-        </Page>
-      ))}
-
-      {/* Proposta de Preço + Condições Comerciais */}
+      {/* Página 2 — apresentação SANY, equipamento (foto + principais características) e,
+          logo abaixo, a proposta de preço e as condições comerciais. Quando o processo
+          tem mais de um item, cada item extra ganha sua própria foto/tabela antes da
+          proposta de preço; a apresentação SANY aparece só uma vez. */}
       <Page size="A4" style={styles.page}>
         <View style={styles.content}>
           <BrandLockup />
+
+          {!!firstItem && (
+            <Image
+              src={PROPOSAL_ASSETS.sanyBrandBlock}
+              style={{ width: CONTENT_W, height: CONTENT_W * (509 / 1200), marginBottom: 10 }}
+            />
+          )}
+
+          {data.items.map((item, index) => (
+            <View key={index} wrap={false}>
+              <SectionHeader>{index === 0 ? "Equipamento ofertado" : `Equipamento ofertado ${index + 1}`}</SectionHeader>
+              <Text style={styles.equipTitle}>{item.object}</Text>
+              {!!item.model && <Text style={styles.equipModel}>{item.model}</Text>}
+
+              <View style={{ flexDirection: "row", marginBottom: 10 }}>
+                <View style={{ width: CONTENT_W / 2 - 8, marginRight: 16 }}>
+                  {item.photos.slice(0, 1).map((photo, photoIndex) => (
+                    <Image
+                      key={photoIndex}
+                      src={photo}
+                      style={{
+                        width: CONTENT_W / 2 - 8,
+                        height: (CONTENT_W / 2 - 8) * 0.62,
+                        objectFit: "cover",
+                      }}
+                    />
+                  ))}
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  {item.specFields.length > 0 && (
+                    <>
+                      <SectionHeader>Principais características</SectionHeader>
+                      <View style={styles.specTable}>
+                        {item.specFields.map((field, fieldIndex) => (
+                          <View key={fieldIndex} style={styles.specRow} wrap={false}>
+                            <Text style={styles.specLabelCell}>{field.label}</Text>
+                            <Text style={styles.specValueCell}>{field.value}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  )}
+                </View>
+              </View>
+            </View>
+          ))}
+
           <SectionHeader>Proposta de preço</SectionHeader>
 
           <View style={styles.tableHeaderRow} fixed>
@@ -325,7 +325,7 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
                   {item.object.toUpperCase()}
                   {item.model ? ` ${item.model.toUpperCase()}` : ""}
                 </Text>
-                <Text style={{ fontSize: 8, lineHeight: 1.5, color: COLOR.body }}>{item.descriptiveText || "—"}</Text>
+                <Text style={{ fontSize: 6.5, lineHeight: 1.35, color: COLOR.body }}>{item.descriptiveText || "—"}</Text>
               </View>
               <Text style={[styles.tableCell, { width: COL.qty }]}>{item.quantity}</Text>
               <Text style={[styles.tableCell, { width: COL.unit }]}>{formatBRL(item.unitValue)}</Text>
@@ -371,14 +371,14 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
         <Footer clienteNome={data.clienteNome} />
       </Page>
 
-      {/* Estrutura e Atendimento + Consultora Responsável (contato) */}
+      {/* Página 3 — Estrutura e Atendimento + Consultora Responsável (contato) */}
       <Page size="A4" style={styles.page}>
         <View style={styles.content}>
           <BrandLockup />
           <SectionHeader>Estrutura e atendimento</SectionHeader>
           <Image
             src={PROPOSAL_ASSETS.estruturaAtendimento}
-            style={{ width: CONTENT_W, height: CONTENT_W * (842 / 1200), marginBottom: 28 }}
+            style={{ width: CONTENT_W, height: CONTENT_W * (842 / 1200), marginBottom: 22 }}
           />
 
           <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
@@ -419,11 +419,11 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
           </View>
         </View>
 
-        <View style={{ position: "absolute", bottom: 30, left: 0, right: 0, alignItems: "center" }}>
-          <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 8, color: COLOR.text }}>
+        <View style={{ position: "absolute", bottom: 26, left: 0, right: 0, alignItems: "center" }}>
+          <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 7.5, color: COLOR.text }}>
             {IRMEN_INFO.razaoSocial}
           </Text>
-          <Text style={{ fontSize: 7.5, color: COLOR.muted, marginTop: 2 }}>CNPJ {IRMEN_INFO.cnpj}</Text>
+          <Text style={{ fontSize: 7, color: COLOR.muted, marginTop: 2 }}>CNPJ {IRMEN_INFO.cnpj}</Text>
         </View>
       </Page>
     </Document>
