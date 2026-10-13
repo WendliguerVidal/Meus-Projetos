@@ -3,8 +3,9 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireUser, assertCanAccessState } from "@/lib/rbac";
+import { requireUser, requireAdmin, assertCanAccessState } from "@/lib/rbac";
 import { toFriendlyErrorMessage, type ActionResult } from "@/lib/action-errors";
+import { logAudit } from "@/lib/audit";
 import {
   generateProposalSchema,
   type GenerateProposalFormValues,
@@ -305,6 +306,33 @@ export async function getSavedProposalPdf(id: string): Promise<ActionResult<{ ba
     return { success: true, data: { base64, fileName: proposal.fileName } };
   } catch (err) {
     console.error("[proposal] getSavedProposalPdf falhou:", err);
+    return { success: false, error: toFriendlyErrorMessage(err) };
+  }
+}
+
+/** Restrito a administradores — mesmo padrão de deleteAttachment/deleteFile. Remove só o
+ * registro salvo; não desfaz nada que já tenha sido enviado ao cliente. */
+export async function deleteProposal(id: string): Promise<ActionResult> {
+  try {
+    const user = await requireUser();
+    requireAdmin(user);
+
+    const proposal = await prisma.proposal.findUniqueOrThrow({
+      where: { id },
+      include: { deal: { select: { state: true } } },
+    });
+    assertCanAccessState(user, proposal.deal.state);
+
+    await prisma.proposal.delete({ where: { id } });
+    await logAudit({
+      dealId: proposal.dealId,
+      userId: user.id,
+      action: `Excluiu a proposta comercial "${proposal.fileName}"`,
+    });
+
+    return { success: true, data: null };
+  } catch (err) {
+    console.error("[proposal] deleteProposal falhou:", err);
     return { success: false, error: toFriendlyErrorMessage(err) };
   }
 }
