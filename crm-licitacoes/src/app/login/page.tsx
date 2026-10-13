@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Gavel, Loader2 } from "lucide-react";
 import { loginAction } from "./actions";
@@ -8,11 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-function SubmitButton() {
+function SubmitButton({ redirecting }: { redirecting: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+    <Button type="submit" className="w-full" disabled={pending || redirecting}>
+      {(pending || redirecting) && <Loader2 className="h-4 w-4 animate-spin" />}
       Entrar
     </Button>
   );
@@ -20,6 +21,13 @@ function SubmitButton() {
 
 export default function LoginPage() {
   const [state, formAction] = useFormState(loginAction, { error: null });
+
+  // Navegação de página inteira (não router.push/replace) — necessária para o
+  // <SessionProvider> remontar com o cookie de sessão já válido (ver comentário em
+  // login/actions.ts sobre por que o redirect do lado do servidor não bastava).
+  React.useEffect(() => {
+    if (state.ok) window.location.href = "/";
+  }, [state.ok]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -44,7 +52,7 @@ export default function LoginPage() {
             {state.error && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
             )}
-            <SubmitButton />
+            <SubmitButton redirecting={!!state.ok} />
           </form>
           <p className="mt-4 text-center text-xs text-muted-foreground">
             Acesso restrito. Contate o administrador para obter credenciais.

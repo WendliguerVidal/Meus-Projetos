@@ -7,6 +7,7 @@ import {
   generateProposalPdf,
   listProposalsForDeal,
   getSavedProposalPdf,
+  deleteProposal,
 } from "@/app/actions/proposal";
 import type { GenerateProposalFormValues } from "@/types/proposal";
 
@@ -74,5 +75,20 @@ export function useDownloadSavedProposal() {
     },
     onSuccess: (data) => downloadBase64Pdf(data.base64, data.fileName),
     onError: (err: Error) => toast.error(err.message || "Erro ao baixar a proposta."),
+  });
+}
+
+export function useDeleteProposal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string; dealId: string }) => {
+      const result = await deleteProposal(id);
+      if (!result.success) throw new Error(result.error);
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["proposals", variables.dealId] });
+      toast.success("Proposta excluída.");
+    },
+    onError: (err: Error) => toast.error(err.message || "Erro ao excluir a proposta."),
   });
 }
