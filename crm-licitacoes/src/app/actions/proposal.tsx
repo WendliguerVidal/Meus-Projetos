@@ -214,6 +214,7 @@ export async function generateProposalPdf(
       <ProposalDocument
         data={{
           dealTitle: deal.title,
+          dealState: deal.state,
           dataProposta: data.dataProposta,
           clienteNome: data.clienteNome,
           aliquotaIcms: data.aliquotaIcms ?? "",
