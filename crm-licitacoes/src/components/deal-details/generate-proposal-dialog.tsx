@@ -58,7 +58,7 @@ export function GenerateProposalDialog({
   const [prazoGarantia, setPrazoGarantia] = React.useState("");
   const [localEntrega, setLocalEntrega] = React.useState("");
   const [prazoEntrega, setPrazoEntrega] = React.useState("");
-  const [validadeProposta, setValidadeProposta] = React.useState("60 dias");
+  const [validadeProposta, setValidadeProposta] = React.useState("30 dias");
   const [consultorNome, setConsultorNome] = React.useState("");
   const [consultorCargo, setConsultorCargo] = React.useState("Consultor");
   const [consultorContato, setConsultorContato] = React.useState("");
@@ -83,10 +83,11 @@ export function GenerateProposalDialog({
         setClienteNome(initialFormData?.clienteNome ?? data.clienteNome);
         setLocalEntrega(initialFormData?.localEntrega ?? data.localEntrega);
         setAliquotaIcms(initialFormData?.aliquotaIcms ?? "");
-        setCondicoesPagamento(initialFormData?.condicoesPagamento ?? "");
-        setPrazoGarantia(initialFormData?.prazoGarantia ?? "");
+        // Padrões pré-preenchidos (sempre editáveis) — ver comentário no topo do arquivo.
+        setCondicoesPagamento(initialFormData?.condicoesPagamento ?? "À Vista");
+        setPrazoGarantia(initialFormData?.prazoGarantia ?? "12 meses sem limite de horas");
         setPrazoEntrega(initialFormData?.prazoEntrega ?? "");
-        setValidadeProposta(initialFormData?.validadeProposta ?? "60 dias");
+        setValidadeProposta(initialFormData?.validadeProposta ?? "30 dias");
         setConsultorNome(initialFormData?.consultorNome ?? data.consultorNome);
         setConsultorCargo(initialFormData?.consultorCargo ?? "Consultor");
         setConsultorContato(initialFormData?.consultorContato ?? "");

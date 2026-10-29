@@ -49,6 +49,9 @@ export type ProposalDocumentItem = {
 
 export type ProposalDocumentData = {
   dealTitle: string;
+  /** UF do processo (Deal.state) — define o CNPJ/endereço da filial proponente na capa
+   * e no rodapé da página 3 (ver IRMEN_BRANCHES). */
+  dealState: string;
   dataProposta: string;
   clienteNome: string;
   aliquotaIcms: string;
@@ -149,17 +152,61 @@ const styles = StyleSheet.create({
 /** Coluna com largura fixa (soma ≈ CONTENT_W) reaproveitada na tabela de preços. */
 const COL = { descr: 245, qty: 77, unit: 96, total: 105 };
 
-/** Dados fixos da IRMEN (proponente) — mesmos em toda proposta gerada. */
+/** Dados fixos da IRMEN comuns a toda proposta, independente da UF do processo. */
 const IRMEN_INFO = {
   razaoSocial: "IRMEN MÁQUINAS E EQUIPAMENTOS",
-  cnpj: "10.657.159/0001-37",
-  filial: "Filial São Paulo",
-  endereco: "Rua Valença, nº 542 – B. Palmeiras de São José",
-  cep: "CEP 12.237-824 – São José dos Campos/SP",
   site: "irmen.com.br",
   linkedin: "/company/irmenmaquinas",
   instagram: "@irmen_maquinas",
 };
+
+type IrmenBranch = { filial: string; cnpj: string; endereco: string; cepCidadeUf: string };
+
+/** CNPJ e endereço da filial proponente — varia pela UF do processo (Deal.state), conforme
+ * definido pelo usuário. UFs fora deste mapa (nenhuma informada até o momento) caem no
+ * padrão SP/RJ (ver getIrmenBranch). */
+const IRMEN_BRANCHES: Record<string, IrmenBranch> = {
+  MG: {
+    filial: "Filial Betim",
+    cnpj: "25.521.683/0001-53",
+    endereco: "SN, Rod. Fernão Dias, KM 488 – Distrito Industrial Paulo Camilo Sul",
+    cepCidadeUf: "CEP 32.669-055 – Betim/MG",
+  },
+  ES: {
+    filial: "Filial Betim",
+    cnpj: "25.521.683/0001-53",
+    endereco: "SN, Rod. Fernão Dias, KM 488 – Distrito Industrial Paulo Camilo Sul",
+    cepCidadeUf: "CEP 32.669-055 – Betim/MG",
+  },
+  SP: {
+    filial: "Filial São Paulo",
+    cnpj: "10.657.159/0001-37",
+    endereco: "Rua Valença, nº 542 – B. Palmeiras de São José",
+    cepCidadeUf: "CEP 12.237-824 – São José dos Campos/SP",
+  },
+  RJ: {
+    filial: "Filial São Paulo",
+    cnpj: "10.657.159/0001-37",
+    endereco: "Rua Valença, nº 542 – B. Palmeiras de São José",
+    cepCidadeUf: "CEP 12.237-824 – São José dos Campos/SP",
+  },
+  PA: {
+    filial: "Filial Pará",
+    cnpj: "25.521.683/0005-87",
+    endereco: "Rodovia PA-160, Quadra 123, nº 892, Lote 06 – Bairro Cidade Jardim",
+    cepCidadeUf: "Parauapebas/PA",
+  },
+  MT: {
+    filial: "Filial Mato Grosso",
+    cnpj: "25.521.683/0003-15",
+    endereco: "Rua Intendente Antônio João de Arruda, 620 – Bairro Boa Nova",
+    cepCidadeUf: "CEP 78.175-000 – Poconé/MT",
+  },
+};
+
+function getIrmenBranch(state: string): IrmenBranch {
+  return IRMEN_BRANCHES[state] ?? (IRMEN_BRANCHES.SP as IrmenBranch);
+}
 
 function BrandLockup() {
   return (
@@ -195,6 +242,7 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
   const totalGeral = data.items.reduce((sum, it) => sum + it.totalValue, 0);
   const totalQuantidade = data.items.reduce((sum, it) => sum + it.quantity, 0);
   const firstItem = data.items[0];
+  const branch = getIrmenBranch(data.dealState);
 
   return (
     <Document title="Proposta Comercial — IRMEN SANY">
@@ -221,10 +269,10 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
               <Text style={[styles.proponenteLine, { fontFamily: "Helvetica-Bold", marginBottom: 2 }]}>
                 {IRMEN_INFO.razaoSocial}
               </Text>
-              <Text style={styles.proponenteLine}>CNPJ: {IRMEN_INFO.cnpj}</Text>
-              <Text style={styles.proponenteLine}>{IRMEN_INFO.filial}</Text>
-              <Text style={styles.proponenteLine}>{IRMEN_INFO.endereco}</Text>
-              <Text style={styles.proponenteLine}>{IRMEN_INFO.cep}</Text>
+              <Text style={styles.proponenteLine}>CNPJ: {branch.cnpj}</Text>
+              <Text style={styles.proponenteLine}>{branch.filial}</Text>
+              <Text style={styles.proponenteLine}>{branch.endereco}</Text>
+              <Text style={styles.proponenteLine}>{branch.cepCidadeUf}</Text>
             </View>
           </View>
 
@@ -401,7 +449,7 @@ export function ProposalDocument({ data }: { data: ProposalDocumentData }) {
           <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 7.5, color: COLOR.text }}>
             {IRMEN_INFO.razaoSocial}
           </Text>
-          <Text style={{ fontSize: 7, color: COLOR.muted, marginTop: 2 }}>CNPJ {IRMEN_INFO.cnpj}</Text>
+          <Text style={{ fontSize: 7, color: COLOR.muted, marginTop: 2 }}>CNPJ {branch.cnpj}</Text>
         </View>
       </Page>
     </Document>
