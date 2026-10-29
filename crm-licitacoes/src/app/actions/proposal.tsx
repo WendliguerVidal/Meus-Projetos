@@ -23,27 +23,40 @@ export type { ActionResult };
 // Mesmo RBAC por estado (UF) já usado no restante do Deal (assertCanAccessState).
 // ---------------------------------------------------------------------------
 
+function stripAccents(value: string): string {
+  return value.normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+/** Para o Objeto — tolera acentos e espaços extras digitados diferente no item do
+ * processo e no Cadastro de Equipamentos (ambos os campos são de digitação livre, a
+ * busca no Cadastro é só uma sugestão, ver deal-form.tsx). */
 function normalize(value: string): string {
-  return value.trim().toLowerCase();
+  return stripAccents(value.trim().toLowerCase()).replace(/\s+/g, " ");
+}
+
+/** Para o Modelo — além de acentos/espaços, ignora hífens/pontos (ex.: "SSR120C-10S" e
+ * "SSR120C10S" devem casar), senão um item sem o mesmo formato do Cadastro cai no
+ * equipamento errado (ou em nenhum) e perde a foto na proposta gerada. */
+function normalizeModel(value: string): string {
+  return stripAccents(value.trim().toLowerCase()).replace(/[^a-z0-9]+/g, "");
 }
 
 /** Encontra o equipamento do Cadastro de Máquinas correspondente a um item do processo —
  * por Objeto (obrigatório) e, quando informado, também por Modelo. Sem correspondência de
  * modelo, usa o primeiro equipamento com o mesmo objeto como sugestão de partida (o
- * usuário revisa/edita o descritivo antes de gerar). */
+ * usuário revisa/edita o descritivo antes de gerar). Compara em memória (normalização
+ * tolerante acima) em vez de um `equals` no banco, que exigiria o texto idêntico. */
 async function findMatchingEquipment(object: string, model: string | null) {
   const objNorm = normalize(object);
   if (!objNorm) return null;
 
-  const candidates = await prisma.equipment.findMany({
-    where: { object: { equals: object, mode: "insensitive" } },
-    select: { id: true, object: true, model: true },
-  });
+  const all = await prisma.equipment.findMany({ select: { id: true, object: true, model: true } });
+  const candidates = all.filter((c) => normalize(c.object) === objNorm);
   if (candidates.length === 0) return null;
 
   if (model && model.trim()) {
-    const modelNorm = normalize(model);
-    const exact = candidates.find((c) => c.model && normalize(c.model) === modelNorm);
+    const modelNorm = normalizeModel(model);
+    const exact = candidates.find((c) => c.model && normalizeModel(c.model) === modelNorm);
     if (exact) return exact;
   }
   return candidates[0];
