@@ -41,25 +41,34 @@ function normalizeModel(value: string): string {
   return stripAccents(value.trim().toLowerCase()).replace(/[^a-z0-9]+/g, "");
 }
 
-/** Encontra o equipamento do Cadastro de Máquinas correspondente a um item do processo —
- * por Objeto (obrigatório) e, quando informado, também por Modelo. Sem correspondência de
- * modelo, usa o primeiro equipamento com o mesmo objeto como sugestão de partida (o
- * usuário revisa/edita o descritivo antes de gerar). Compara em memória (normalização
- * tolerante acima) em vez de um `equals` no banco, que exigiria o texto idêntico. */
+/** Encontra o equipamento do Cadastro de Máquinas correspondente a um item do processo.
+ *
+ * O Modelo é tentado PRIMEIRO, antes do Objeto: no formulário do processo (ver
+ * deal-form.tsx) o campo Modelo normalmente vem escolhido de uma sugestão vinda do
+ * próprio Cadastro (texto idêntico ao de Equipment.model), mas o campo Objeto é 100%
+ * digitação livre — o usuário pode digitar "ESCAVADEIRA" enquanto o Cadastro tem
+ * "ESCAVADEIRA HIDRÁULICA SANY", por exemplo. Exigir também o Objeto igual (como era
+ * antes) fazia a busca falhar mesmo com o Modelo batendo certinho, perdendo a foto na
+ * proposta. Só cai para a busca por Objeto quando não há Modelo informado ou nenhum
+ * equipamento tem esse Modelo cadastrado. */
 async function findMatchingEquipment(object: string, model: string | null) {
-  const objNorm = normalize(object);
-  if (!objNorm) return null;
-
   const all = await prisma.equipment.findMany({ select: { id: true, object: true, model: true } });
-  const candidates = all.filter((c) => normalize(c.object) === objNorm);
-  if (candidates.length === 0) return null;
 
   if (model && model.trim()) {
     const modelNorm = normalizeModel(model);
-    const exact = candidates.find((c) => c.model && normalizeModel(c.model) === modelNorm);
-    if (exact) return exact;
+    const modelMatches = all.filter((c) => c.model && normalizeModel(c.model) === modelNorm);
+    if (modelMatches.length === 1) return modelMatches[0];
+    if (modelMatches.length > 1) {
+      // Mais de um equipamento com o mesmo Modelo (raro) — prioriza o que também bate o
+      // Objeto; sem isso, usa o primeiro mesmo.
+      const objNorm = normalize(object);
+      return modelMatches.find((c) => normalize(c.object) === objNorm) ?? modelMatches[0];
+    }
   }
-  return candidates[0];
+
+  const objNorm = normalize(object);
+  if (!objNorm) return null;
+  return all.find((c) => normalize(c.object) === objNorm) ?? null;
 }
 
 /** Junta os campos de "Características" do equipamento (label/valor) num texto único —
